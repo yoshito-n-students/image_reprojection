@@ -23,10 +23,8 @@ namespace image_reprojection {
 class ImageReprojection : public nodelet::Nodelet {
    public:
     ImageReprojection()
-        : projection_loader_("image_reprojection",
-                             "image_reprojection::ProjectionPlugin"),
-          transform_loader_("image_reprojection",
-                            "image_reprojection::TransformPlugin") {}
+        : projection_loader_("image_reprojection", "image_reprojection::ProjectionPlugin"),
+          transform_loader_("image_reprojection", "image_reprojection::TransformPlugin") {}
 
     virtual ~ImageReprojection() {
         // destroy all classes from plugins before destroying loaders
@@ -47,24 +45,22 @@ class ImageReprojection : public nodelet::Nodelet {
             std::string type;
             uhp::getRequired(pnh, "src_projection/type", type);
             src_projection_ = projection_loader_.createInstance(type);
-            src_projection_->init(
-                rn::append(pnh.getNamespace(), "src_projection"),
-                ros::M_string(), getMyArgv());
+            src_projection_->init(rn::append(pnh.getNamespace(), "src_projection"), ros::M_string(),
+                                  getMyArgv());
         }
         {
             std::string type;
             uhp::getRequired(pnh, "dst_projection/type", type);
             dst_projection_ = projection_loader_.createInstance(type);
-            dst_projection_->init(
-                rn::append(pnh.getNamespace(), "dst_projection"),
-                ros::M_string(), getMyArgv());
+            dst_projection_->init(rn::append(pnh.getNamespace(), "dst_projection"), ros::M_string(),
+                                  getMyArgv());
         }
         {
             std::string type;
             uhp::getRequired(pnh, "transform/type", type);
             transform_ = transform_loader_.createInstance(type);
-            transform_->init(rn::append(pnh.getNamespace(), "transform"),
-                             ros::M_string(), getMyArgv());
+            transform_->init(rn::append(pnh.getNamespace(), "transform"), ros::M_string(),
+                             getMyArgv());
         }
 
         {
@@ -80,18 +76,15 @@ class ImageReprojection : public nodelet::Nodelet {
             }
         }
 
-        frame_dst_ =
-            uhp::param<std::string>(pnh, "frame_dst", "reprojected_camera");
+        frame_dst_ = uhp::param<std::string>(pnh, "frame_dst", "reprojected_camera");
 
         {
             image_transport::ImageTransport it(nh);
-            publisher_ = it.advertise(
-                uhp::param<std::string>(pnh, "topic_dst", "reprojected_image"),
-                1);
-            subscriber_ = it.subscribe(
-                uhp::param<std::string>(pnh, "topic_src", "image"), 1,
-                &ImageReprojection::onSrcRecieved, this,
-                uhp::param<std::string>(pnh, "transport_src", "raw"));
+            publisher_ =
+                it.advertise(uhp::param<std::string>(pnh, "topic_dst", "reprojected_image"), 1);
+            subscriber_ = it.subscribe(uhp::param<std::string>(pnh, "topic_src", "image"), 1,
+                                       &ImageReprojection::onSrcRecieved, this,
+                                       uhp::param<std::string>(pnh, "transport_src", "raw"));
         }
     }
 
@@ -106,8 +99,7 @@ class ImageReprojection : public nodelet::Nodelet {
 
         cv::Mat object_points_dst;
         cv::Mat mask_dst;
-        dst_projection_->reproject(image_points_dst_, object_points_dst,
-                                   mask_dst);
+        dst_projection_->reproject(image_points_dst_, object_points_dst, mask_dst);
 
         cv::Mat object_points_src;
         transform_->inverseTransform(object_points_dst, object_points_src);
@@ -116,14 +108,12 @@ class ImageReprojection : public nodelet::Nodelet {
         cv::Mat mask_src;
         src_projection_->project(object_points_src, image_points_src, mask_src);
 
-        remap(cv_src->image, cv_dst.image, image_points_src,
-              cv::max(mask_src, mask_dst));
+        remap(cv_src->image, cv_dst.image, image_points_src, cv::max(mask_src, mask_dst));
 
         publisher_.publish(cv_dst.toImageMsg());
     }
 
-    static void remap(const cv::Mat &src, cv::Mat &dst, const cv::Mat &map,
-                      const cv::Mat &mask) {
+    static void remap(const cv::Mat &src, cv::Mat &dst, const cv::Mat &map, const cv::Mat &mask) {
         // remap the source image to a temp image
         cv::Mat tmp;
         cv::remap(src, tmp, map, cv::noArray(), cv::INTER_LINEAR);

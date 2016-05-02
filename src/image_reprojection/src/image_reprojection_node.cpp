@@ -5,20 +5,19 @@
 #include <ros/node_handle.h>
 #include <ros/this_node.h>
 
-int main(int argc, char *argv[])
-{
-  ros::init(argc,argv,"image_reprojection_node");
-  ros::NodeHandle handle;
+int main(int argc, char *argv[]) {
+    ros::init(argc, argv, "image_reprojection_node");
+    ros::NodeHandle handle;
 
-  ros::V_string args;
-  ros::removeROSArgs(argc,argv,args);
+    ros::V_string args;
+    ros::removeROSArgs(argc, argv, args);
 
-  image_reprojection::ImageReprojection node;
-  node.init(ros::this_node::getName(),ros::names::getRemappings(),args);
+    image_reprojection::ImageReprojection node;
+    node.init(ros::this_node::getName(), ros::names::getRemappings(), args);
 
-  ROS_INFO_STREAM(ros::this_node::getName() << " has been started");
+    ROS_INFO_STREAM(ros::this_node::getName() << " has been started");
 
-  ros::spin();
+    ros::spin();
 
-  return 0;
+    return 0;
 }
