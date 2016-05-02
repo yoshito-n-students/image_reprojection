@@ -1,0 +1,25 @@
+<launch>
+
+  <node pkg="image_reprojection"
+	type="image_reprojection_node"
+	name="image_reprojection_node"
+	output="screen">
+    <rosparam>
+      topic_src: image
+      transport_src: compressed
+      topic_dst: reprojected_image
+      image_size_dst: [500,500]
+      frame_dst: reprojected_camera
+    </rosparam>
+    <rosparam ns="src_projection">
+      type: image_reprojection_plugins::FisheyeProjectionPlugin
+    </rosparam>
+    <rosparam ns="transform">
+      type: image_reprojection_plugins::RotationTransformPlugin
+    </rosparam>
+    <rosparam ns="dst_projection">
+      type: image_reprojection_plugins::StandardProjectionPlugin
+    </rosparam>
+  </node>
+
+</launch>

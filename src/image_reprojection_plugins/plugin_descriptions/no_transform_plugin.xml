@@ -1,0 +1,8 @@
+<library path="lib/libno_transform_plugin">
+  <class type="image_reprojection_plugins::NoTransformPlugin"
+	 base_class_type="image_reprojection::TransformPlugin">
+    <description>
+      This is a transform plugin that performs no transform
+    </description>
+  </class>
+</library>
