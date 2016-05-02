@@ -3,4 +3,4 @@
 #include <image_reprojection_plugins/standard_projection_plugin.hpp>
 
 PLUGINLIB_EXPORT_CLASS(image_reprojection_plugins::StandardProjectionPlugin,
-		       image_reprojection::ProjectionPlugin);
+                       image_reprojection::ProjectionPlugin);

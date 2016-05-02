@@ -3,4 +3,4 @@
 #include <image_reprojection_plugins/no_transform_plugin.hpp>
 
 PLUGINLIB_EXPORT_CLASS(image_reprojection_plugins::NoTransformPlugin,
-		       image_reprojection::TransformPlugin);
+                       image_reprojection::TransformPlugin);
