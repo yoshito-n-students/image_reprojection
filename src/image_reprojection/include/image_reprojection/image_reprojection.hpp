@@ -1,6 +1,7 @@
 #ifndef _IMAGE_REPROJECTION_IMAGE_REPROJECTION_HPP_
 #define _IMAGE_REPROJECTION_IMAGE_REPROJECTION_HPP_
 
+#include <stdexcept>
 #include <string>
 
 #include <cv_bridge/cv_bridge.h>
@@ -11,12 +12,13 @@
 #include <image_transport/subscriber.h>
 #include <nodelet/nodelet.h>
 #include <pluginlib/class_loader.h>
-#include <ros/names.h>
+#include <ros/console.h>
 #include <ros/param.h>
 #include <sensor_msgs/Image.h>
 #include <utility_headers/param.hpp>
 
 #include <opencv2/core/core.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 
 namespace image_reprojection {
 
@@ -35,7 +37,6 @@ class ImageReprojection : public nodelet::Nodelet {
 
    private:
     virtual void onInit() {
-        namespace rn = ros::names;
         namespace uhp = utility_headers::param;
 
         const ros::NodeHandle &nh(getNodeHandle());
@@ -45,22 +46,19 @@ class ImageReprojection : public nodelet::Nodelet {
             std::string type;
             uhp::getRequired(pnh, "src_projection/type", type);
             src_projection_ = projection_loader_.createInstance(type);
-            src_projection_->init(rn::append(pnh.getNamespace(), "src_projection"), ros::M_string(),
-                                  getMyArgv());
+            src_projection_->init(pnh.resolveName("src_projection"), ros::M_string(), getMyArgv());
         }
         {
             std::string type;
             uhp::getRequired(pnh, "dst_projection/type", type);
             dst_projection_ = projection_loader_.createInstance(type);
-            dst_projection_->init(rn::append(pnh.getNamespace(), "dst_projection"), ros::M_string(),
-                                  getMyArgv());
+            dst_projection_->init(pnh.resolveName("dst_projection"), ros::M_string(), getMyArgv());
         }
         {
             std::string type;
             uhp::getRequired(pnh, "transform/type", type);
             transform_ = transform_loader_.createInstance(type);
-            transform_->init(rn::append(pnh.getNamespace(), "transform"), ros::M_string(),
-                             getMyArgv());
+            transform_->init(pnh.resolveName("transform"), ros::M_string(), getMyArgv());
         }
 
         {
@@ -89,28 +87,32 @@ class ImageReprojection : public nodelet::Nodelet {
     }
 
     void onSrcRecieved(const sensor_msgs::ImageConstPtr &ros_src) {
-        cv_bridge::CvImageConstPtr cv_src(cv_bridge::toCvShare(ros_src));
+        try {
+            cv_bridge::CvImageConstPtr cv_src(cv_bridge::toCvShare(ros_src));
 
-        cv_bridge::CvImage cv_dst;
-        cv_dst.header.seq = cv_src->header.seq;
-        cv_dst.header.stamp = cv_src->header.stamp;
-        cv_dst.header.frame_id = frame_dst_;
-        cv_dst.encoding = cv_src->encoding;
+            cv_bridge::CvImage cv_dst;
+            cv_dst.header.seq = cv_src->header.seq;
+            cv_dst.header.stamp = cv_src->header.stamp;
+            cv_dst.header.frame_id = frame_dst_;
+            cv_dst.encoding = cv_src->encoding;
 
-        cv::Mat object_points_dst;
-        cv::Mat mask_dst;
-        dst_projection_->reproject(image_points_dst_, object_points_dst, mask_dst);
+            cv::Mat object_points_dst;
+            cv::Mat mask_dst;
+            dst_projection_->reproject(image_points_dst_, object_points_dst, mask_dst);
 
-        cv::Mat object_points_src;
-        transform_->inverseTransform(object_points_dst, object_points_src);
+            cv::Mat object_points_src;
+            transform_->inverseTransform(object_points_dst, object_points_src);
 
-        cv::Mat image_points_src;
-        cv::Mat mask_src;
-        src_projection_->project(object_points_src, image_points_src, mask_src);
+            cv::Mat image_points_src;
+            cv::Mat mask_src;
+            src_projection_->project(object_points_src, image_points_src, mask_src);
 
-        remap(cv_src->image, cv_dst.image, image_points_src, cv::max(mask_src, mask_dst));
+            remap(cv_src->image, cv_dst.image, image_points_src, cv::max(mask_src, mask_dst));
 
-        publisher_.publish(cv_dst.toImageMsg());
+            publisher_.publish(cv_dst.toImageMsg());
+        } catch (const std::runtime_error &ex) {
+            ROS_ERROR_STREAM(ex.what());
+        }
     }
 
     static void remap(const cv::Mat &src, cv::Mat &dst, const cv::Mat &map, const cv::Mat &mask) {
