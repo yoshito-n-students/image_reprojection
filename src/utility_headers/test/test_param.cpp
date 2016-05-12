@@ -108,6 +108,32 @@ TEST(TestParam, CaseArray) {
     }
 }
 
+TEST(TestParam, CaseMat) {
+    uhp::del("~mat_param");
+    {
+        cv::Matx33d val;
+        for (int i = 0; i < 3; ++i) {
+            for (int j = 0; j < 3; ++j) {
+                val(i, j) = i * 10 + j;
+            }
+        }
+        uhp::set("~mat_param", val);
+    }
+    {
+        cv::Matx33d val;
+        EXPECT_TRUE(uhp::get("~mat_param", val));
+        for (int i = 0; i < 3; ++i) {
+            for (int j = 0; j < 3; ++j) {
+                EXPECT_TRUE(val(i, j) == i * 10 + j);
+            }
+        }
+    }
+    {
+        cv::Matx44d val;
+        EXPECT_FALSE(uhp::get("~mat_param", val));
+    }
+}
+
 TEST(TestParam, CaseMap) {
     // When no parameter is available on the parameter server ...
     uhp::del("~map_param");

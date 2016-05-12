@@ -19,6 +19,8 @@
 #include <boost/type_traits/is_integral.hpp>
 #include <boost/utility/enable_if.hpp>
 
+#include <opencv2/core/core.hpp>
+
 namespace utility_headers {
 namespace param {
 
@@ -230,6 +232,79 @@ struct Helper<boost::array<T, N> > {
         dst.setSize(N);
         for (std::size_t i = 0; i < N; ++i) {
             Helper<T>::cast(src[i], dst[i]);
+        }
+    }
+
+    static bool get(const std::string &name, ValueType &val) {
+        XrvType xrv;
+        if (!ros::param::get(name, xrv)) {
+            return false;
+        }
+        if (!ThisType::cast(xrv, val)) {
+            return false;
+        }
+        return true;
+    }
+
+    static void set(const std::string &name, const ValueType &val) {
+        XrvType xrv;
+        ThisType::cast(val, xrv);
+        ros::param::set(name, xrv);
+    }
+
+    static bool write(const ValueType &val, std::ostream &ost) {
+        XrvType xrv;
+        ThisType::cast(val, xrv);
+        xrv.write(ost);
+        return true;
+    }
+};
+
+// for cv::Matx
+template <typename T, int M, int N>
+struct Helper<cv::Matx<T, M, N> > {
+    typedef Helper<typename cv::Matx<T, M, N> > ThisType;
+    typedef typename cv::Matx<T, M, N> ValueType;
+    typedef XmlRpc::XmlRpcValue XrvType;
+
+    static bool cast(const XrvType &src, ValueType &dst) {
+        if (src.getType() != XrvType::TypeArray) {
+            return false;
+        }
+        if (src.size() != M) {
+            return false;
+        }
+        for (int i = 0; i < M; ++i) {
+            if (src[i].getType() != XrvType::TypeArray) {
+                return false;
+            }
+            if (src[i].size() != N) {
+                return false;
+            }
+        }
+        for (int i = 0; i < M; ++i) {
+            for (int j = 0; j < N; ++j) {
+                if (!Helper<T>::cast(src[i][j], dst(i, j))) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    static void cast(const ValueType &src, XrvType &dst) {
+        dst.clear();
+        // this must be called to make dst a array type
+        // in case the following for does not loop
+        dst.setSize(M);
+        for (int i = 0; i < M; ++i) {
+            dst[i].clear();
+            dst[i].setSize(N);
+        }
+        for (int i = 0; i < M; ++i) {
+            for (int j = 0; j < N; ++j) {
+                Helper<T>::cast(src(i, j), dst[i][j]);
+            }
         }
     }
 

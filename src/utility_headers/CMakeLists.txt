@@ -15,6 +15,10 @@ find_package(
   iostreams
   system
   )
+find_package(
+  OpenCV REQUIRED COMPONENTS
+  core
+  )
 
 
 ## Uncomment this if the package has a setup.py. This macro ensures
@@ -209,6 +213,7 @@ if(TARGET test_param)
   target_link_libraries(
     test_param
     ${catkin_LIBRARIES}
+    ${OpenCV_LIBRARIES}
     )
 endif()
 if(TARGET test_verbose_console)
