@@ -145,9 +145,16 @@ add_library(
 # add_dependencies(cv_extension_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-# target_link_libraries(cv_extension_node
-#   ${catkin_LIBRARIES}
-# )
+set_target_properties(
+  cv_extension
+  PROPERTIES COMPILE_FLAGS
+  "-O2"
+  )
+target_link_libraries(
+  cv_extension
+  ${catkin_LIBRARIES}
+  ${OpenCV_LIBRARIES}
+  )
 
 #############
 ## Install ##
