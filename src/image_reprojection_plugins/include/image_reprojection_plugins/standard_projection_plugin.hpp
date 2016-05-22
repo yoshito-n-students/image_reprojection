@@ -3,12 +3,13 @@
 
 #include <vector>
 
+#include <image_reprojection/projection_plugin.hpp>
+#include <ros/console.h>
+#include <utility_headers/param.hpp>
+
 #include <opencv2/calib3d/calib3d.hpp>
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
-
-#include <image_reprojection/projection_plugin.hpp>
-#include <ros/console.h>
 
 namespace image_reprojection_plugins {
 
@@ -19,10 +20,21 @@ class StandardProjectionPlugin : public image_reprojection::ProjectionPlugin {
     virtual ~StandardProjectionPlugin() {}
 
    private:
-    virtual void onInit() { ROS_DEBUG_STREAM(getName() << " has been initialized"); }
+    virtual void onInit() {
+        namespace uhp = utility_headers::param;
+
+        // get private node handle to access parameters
+        const ros::NodeHandle& pnh(getPrivateNodeHandle());
+
+        // load parameters
+        uhp::getRequired(pnh, "camera_matrix", camera_matrix_);
+        dist_coeffs_ = uhp::param(pnh, "dist_coeffs", std::vector<double>(4, 0.));
+
+        ROS_INFO_STREAM(getName() << " has been initialized");
+    }
 
     virtual void onProject(const cv::Mat& src, cv::Mat& dst, cv::Mat& mask) {
-        cv::projectPoints(src.reshape(1, src.total()), cv::Vec3d::all(0.), cv::Vec3d::all(0.),
+        cv::projectPoints(src.reshape(3, src.total()), cv::Vec3d::all(0.), cv::Vec3d::all(0.),
                           camera_matrix_, dist_coeffs_, dst);
         dst = dst.reshape(2, src.size().height);
 
@@ -36,11 +48,16 @@ class StandardProjectionPlugin : public image_reprojection::ProjectionPlugin {
     }
 
     virtual void onReproject(const cv::Mat& src, cv::Mat& dst, cv::Mat& mask) {
-        cv::Mat tmp;
-        cv::undistortPoints(src.reshape(1, src.total()), tmp, camera_matrix_, dist_coeffs_);
+        // 2D image points -> 2D object points
+        cv::Mat dst2d;
+        cv::undistortPoints(src.reshape(2, src.total()), dst2d, camera_matrix_, dist_coeffs_);
+
+        // 2D object points + z-channel -> 3D object points
         dst.create(src.size(), CV_32FC3);
-        dst.reshape(1, dst.total()).colRange(0, 2) = tmp;
-        dst.reshape(1, dst.total()).col(2) = 1.;
+        // copy xy-channels
+        dst2d.reshape(1, dst2d.total()).copyTo(dst.reshape(1, dst.total()).colRange(0, 2));
+        // fill z-channel to 1.0
+        dst.reshape(1, dst.total()).col(2).setTo(1.);
 
         mask.create(src.size(), CV_8UC1);
         const cv::Rect_<float> rect(cv::Point2f(0., 0.), src.size());
