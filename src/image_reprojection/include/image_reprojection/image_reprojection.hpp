@@ -110,7 +110,7 @@ class ImageReprojection : public nodelet::Nodelet {
             remap(cv_src->image, cv_dst.image, image_points_src, cv::max(mask_src, mask_dst));
 
             publisher_.publish(cv_dst.toImageMsg());
-        } catch (const std::runtime_error &ex) {
+        } catch (const std::exception &ex) {
             ROS_ERROR_STREAM(ex.what());
         }
     }
