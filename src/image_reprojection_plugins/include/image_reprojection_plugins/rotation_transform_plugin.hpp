@@ -1,11 +1,6 @@
 #ifndef _IMAGE_REPROJECTION_PLUGINS_ROTATION_TRANSFORM_PLUGIN_HPP_
 #define _IMAGE_REPROJECTION_PLUGINS_ROTATION_TRANSFORM_PLUGIN_HPP_
 
-#include <opencv2/core/core.hpp>
-
-#include <boost/thread/locks.hpp>
-#include <boost/thread/mutex.hpp>
-
 #include <geometry_msgs/Quaternion.h>
 #include <image_reprojection/transform_plugin.hpp>
 #include <ros/console.h>
@@ -13,6 +8,11 @@
 #include <ros/service_server.h>
 #include <tf/transform_datatypes.h>
 #include <utility_headers/param.hpp>
+
+#include <boost/thread/locks.hpp>
+#include <boost/thread/mutex.hpp>
+
+#include <opencv2/core/core.hpp>
 
 namespace image_reprojection_plugins {
 

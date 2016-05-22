@@ -1,11 +1,11 @@
 #ifndef _IMAGE_REPROJECTION_PLUGINS_NO_PROJECTION_PLUGIN_HPP_
 #define _IMAGE_REPROJECTION_PLUGINS_NO_PROJECTION_PLUGIN_HPP_
 
-#include <opencv2/core/core.hpp>
-
 #include <image_reprojection/projection_plugin.hpp>
 #include <ros/console.h>
 #include <ros/node_handle.h>
+
+#include <opencv2/core/core.hpp>
 
 namespace image_reprojection_plugins {
 

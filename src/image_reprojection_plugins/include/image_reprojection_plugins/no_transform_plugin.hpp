@@ -1,10 +1,10 @@
 #ifndef _IMAGE_REPROJECTION_PLUGINS_NO_TRANSFORM_PLUGIN_HPP_
 #define _IMAGE_REPROJECTION_PLUGINS_NO_TRANSFORM_PLUGIN_HPP_
 
-#include <opencv2/core/core.hpp>
-
 #include <image_reprojection/transform_plugin.hpp>
 #include <ros/console.h>
+
+#include <opencv2/core/core.hpp>
 
 namespace image_reprojection_plugins {
 
