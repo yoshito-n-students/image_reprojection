@@ -114,7 +114,9 @@ find_package(
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
   INCLUDE_DIRS include
-  LIBRARIES fisheye_projection_plugin no_projection_plugin standard_projection_plugin no_transform_plugin rotation_transform_plugin
+  LIBRARIES 
+  fisheye_projection_plugin no_projection_plugin standard_projection_plugin 
+  no_transform_plugin rotation_transform_plugin tf_transform_plugin
   CATKIN_DEPENDS image_reprojection pluginlib roscpp std_msgs
 #  DEPENDS system_lib
 )
@@ -152,7 +154,11 @@ add_library(
   rotation_transform_plugin
   src/rotation_transform_plugin.cpp
   )
-
+add_library(
+  tf_transform_plugin
+  src/tf_transform_plugin.cpp
+  )
+  
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
 ## either from message generation or dynamic reconfigure
@@ -190,6 +196,11 @@ target_link_libraries(
   rotation_transform_plugin
   ${catkin_LIBRARIES}
   ${Boost_LIBRARIES}
+  ${OpenCV_LIBRARIES}
+  )
+  target_link_libraries(
+  tf_transform_plugin
+  ${catkin_LIBRARIES}
   ${OpenCV_LIBRARIES}
   )
 

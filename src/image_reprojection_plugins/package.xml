@@ -64,5 +64,6 @@
     <image_reprojection plugin="${prefix}/plugin_descriptions/standard_projection_plugin.xml" />
     <image_reprojection plugin="${prefix}/plugin_descriptions/no_transform_plugin.xml" />
     <image_reprojection plugin="${prefix}/plugin_descriptions/rotation_transform_plugin.xml" />
+    <image_reprojection plugin="${prefix}/plugin_descriptions/tf_transform_plugin.xml" />
   </export>
 </package>
