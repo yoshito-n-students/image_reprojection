@@ -1,19 +1,18 @@
-#ifndef _IMAGE_REPROJECTION_PLUGINS_NO_PROJECTION_PLUGIN_HPP_
-#define _IMAGE_REPROJECTION_PLUGINS_NO_PROJECTION_PLUGIN_HPP_
+#ifndef IMAGE_REPROJECTION_PLUGINS_NO_PROJECTION_HPP
+#define IMAGE_REPROJECTION_PLUGINS_NO_PROJECTION_HPP
 
-#include <image_reprojection/projection_plugin.hpp>
+#include <image_reprojection/projection_interface.hpp>
 #include <ros/console.h>
-#include <ros/node_handle.h>
 
 #include <opencv2/core/core.hpp>
 
 namespace image_reprojection_plugins {
 
-class NoProjectionPlugin : public image_reprojection::ProjectionPlugin {
+class NoProjection : public image_reprojection::ProjectionInterface {
    public:
-    NoProjectionPlugin() {}
+    NoProjection() {}
 
-    virtual ~NoProjectionPlugin() {}
+    virtual ~NoProjection() {}
 
    private:
     virtual void onInit() { ROS_INFO_STREAM(getName() << " has been initialized"); }
@@ -43,4 +42,4 @@ class NoProjectionPlugin : public image_reprojection::ProjectionPlugin {
 };
 }
 
-#endif /* _IMAGE_REPROJECTION_PLUGINS_NO_PROJECTION_PLUGIN_HPP_ */
+#endif /* IMAGE_REPROJECTION_PLUGINS_NO_PROJECTION_HPP */

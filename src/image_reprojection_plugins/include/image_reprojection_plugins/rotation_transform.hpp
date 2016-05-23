@@ -1,8 +1,8 @@
-#ifndef _IMAGE_REPROJECTION_PLUGINS_ROTATION_TRANSFORM_PLUGIN_HPP_
-#define _IMAGE_REPROJECTION_PLUGINS_ROTATION_TRANSFORM_PLUGIN_HPP_
+#ifndef IMAGE_REPROJECTION_PLUGINS_ROTATION_TRANSFORM_HPP
+#define IMAGE_REPROJECTION_PLUGINS_ROTATION_TRANSFORM_HPP
 
 #include <geometry_msgs/Quaternion.h>
-#include <image_reprojection/transform_plugin.hpp>
+#include <image_reprojection/transform_interface.hpp>
 #include <ros/console.h>
 #include <ros/node_handle.h>
 #include <ros/service_server.h>
@@ -16,14 +16,14 @@
 
 namespace image_reprojection_plugins {
 
-class RotationTransformPlugin : public image_reprojection::TransformPlugin {
+class RotationTransform : public image_reprojection::TransformInterface {
    public:
-    RotationTransformPlugin()
+    RotationTransform()
         : rotation_home_(cv::Mat::eye(3, 3, CV_64FC1)),
           rotation_(cv::Mat::eye(3, 3, CV_64FC1)),
           rotation_inv_(cv::Mat::eye(3, 3, CV_64FC1)) {}
 
-    virtual ~RotationTransformPlugin() {}
+    virtual ~RotationTransform() {}
 
    private:
     virtual void onInit() {
@@ -51,7 +51,7 @@ class RotationTransformPlugin : public image_reprojection::TransformPlugin {
         }
 
         // server_ = nh.advertiseService<>
-        //	("set_rotation",1,&RotationTransformPlugin::setRotation,this);
+        //	("set_rotation",1,&RotationTransform::setRotation,this);
 
         ROS_INFO_STREAM(getName() << " has been initialized");
     }
@@ -104,4 +104,4 @@ class RotationTransformPlugin : public image_reprojection::TransformPlugin {
 };
 }
 
-#endif /* _IMAGE_REPROJECTION_PLUGINS_ROTATION_TRANSFORM_PLUGIN_HPP_ */
+#endif /* IMAGE_REPROJECTION_PLUGINS_ROTATION_TRANSFORM_HPP */

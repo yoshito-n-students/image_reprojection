@@ -15,14 +15,14 @@
       use_fast_mode: true
     </rosparam>
     <rosparam ns="src_projection">
-      type: image_reprojection_plugins::FisheyeProjectionPlugin
+      type: image_reprojection_plugins::FisheyeProjection
       camera_matrix: [[275.,0.,480.],[0.,275.,480.],[0.,0.,1.]]
     </rosparam>
     <rosparam ns="transform">
-      type: image_reprojection_plugins::NoTransformPlugin
+      type: image_reprojection_plugins::NoTransform
     </rosparam>
     <rosparam ns="dst_projection">
-      type: image_reprojection_plugins::StandardProjectionPlugin
+      type: image_reprojection_plugins::StandardProjection
       camera_matrix: [[220.,0.,200.],[0.,220.,200.],[0.,0.,1.]]
     </rosparam>
   </node>

@@ -1,6 +1,6 @@
 <library path="lib/libno_projection_plugin">
-  <class type="image_reprojection_plugins::NoProjectionPlugin"
-	 base_class_type="image_reprojection::ProjectionPlugin">
+  <class type="image_reprojection_plugins::NoProjection"
+	 base_class_type="image_reprojection::ProjectionInterface">
     <description>
       This is a projection plugin that performs no projection
     </description>

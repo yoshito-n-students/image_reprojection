@@ -1,6 +1,6 @@
 <library path="lib/libstandard_projection_plugin">
-  <class type="image_reprojection_plugins::StandardProjectionPlugin"
-	 base_class_type="image_reprojection::ProjectionPlugin">
+  <class type="image_reprojection_plugins::StandardProjection"
+	 base_class_type="image_reprojection::ProjectionInterface">
     <description>
       This is a projection plugin that performs standard projection
     </description>

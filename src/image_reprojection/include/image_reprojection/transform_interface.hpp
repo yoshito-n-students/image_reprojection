@@ -1,19 +1,19 @@
-#ifndef _IMAGE_REPROJECTION_TRANSFORM_PLUGIN_HPP_
-#define _IMAGE_REPROJECTION_TRANSFORM_PLUGIN_HPP_
+#ifndef IMAGE_REPROJECTION_TRANSFORM_INTERFACE_HPP
+#define IMAGE_REPROJECTION_TRANSFORM_INTERFACE_HPP
+
+#include <nodelet/nodelet.h>
 
 #include <boost/shared_ptr.hpp>
 
 #include <opencv2/core/core.hpp>
 
-#include <nodelet/nodelet.h>
-
 namespace image_reprojection {
 
-class TransformPlugin : public nodelet::Nodelet {
+class TransformInterface : public nodelet::Nodelet {
    public:
-    TransformPlugin() {}
+    TransformInterface() {}
 
-    virtual ~TransformPlugin() {}
+    virtual ~TransformInterface() {}
 
     /*
       transform points in the device 3D coordinate.
@@ -75,8 +75,8 @@ class TransformPlugin : public nodelet::Nodelet {
     virtual void onInverseTransform(const cv::Mat& src, cv::Mat& dst) = 0;
 };
 
-typedef boost::shared_ptr<TransformPlugin> TransformPluginPtr;
-typedef boost::shared_ptr<const TransformPlugin> TransformPluginConstPtr;
+typedef boost::shared_ptr<TransformInterface> TransformInterfacePtr;
+typedef boost::shared_ptr<const TransformInterface> TransformInterfaceConstPtr;
 }
 
-#endif /* _IMAGE_REPROJECTION_TRANSFORM_PLUGIN_HPP_ */
+#endif /* IMAGE_REPROJECTION_TRANSFORM_INTERFACE_HPP */

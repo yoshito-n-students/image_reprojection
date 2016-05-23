@@ -1,19 +1,19 @@
-#ifndef _IMAGE_REPROJECTION_PROJECTION_PLUGIN_HPP_
-#define _IMAGE_REPROJECTION_PROJECTION_PLUGIN_HPP_
+#ifndef IMAGE_REPROJECTION_PROJECTION_INTERFACE_HPP
+#define IMAGE_REPROJECTION_PROJECTION_INTERFACE_HPP
+
+#include <nodelet/nodelet.h>
 
 #include <boost/shared_ptr.hpp>
 
 #include <opencv2/core/core.hpp>
 
-#include <nodelet/nodelet.h>
-
 namespace image_reprojection {
 
-class ProjectionPlugin : public nodelet::Nodelet {
+class ProjectionInterface : public nodelet::Nodelet {
    public:
-    ProjectionPlugin() {}
+    ProjectionInterface() {}
 
-    virtual ~ProjectionPlugin() {}
+    virtual ~ProjectionInterface() {}
 
     /*
       project points in the device 3D coordinate to the image 2D coordinate.
@@ -87,8 +87,8 @@ class ProjectionPlugin : public nodelet::Nodelet {
     virtual void onReproject(const cv::Mat& src, cv::Mat& dst, cv::Mat& mask) = 0;
 };
 
-typedef boost::shared_ptr<ProjectionPlugin> ProjectionPluginPtr;
-typedef boost::shared_ptr<const ProjectionPlugin> ProjectionPluginConstPtr;
+typedef boost::shared_ptr<ProjectionInterface> ProjectionInterfacePtr;
+typedef boost::shared_ptr<const ProjectionInterface> ProjectionInterfaceConstPtr;
 }
 
-#endif /* _IMAGE_REPROJECTION_PROJECTION_PLUGIN_HPP_ */
+#endif /* IMAGE_REPROJECTION_PROJECTION_INTERFACE_HPP */

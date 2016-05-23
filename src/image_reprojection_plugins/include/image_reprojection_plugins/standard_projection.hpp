@@ -1,9 +1,9 @@
-#ifndef _IMAGE_REPROJECTION_PLUGINS_STANDARD_PROJECTION_PLUGIN_HPP_
-#define _IMAGE_REPROJECTION_PLUGINS_STANDARD_PROJECTION_PLUGIN_HPP_
+#ifndef IMAGE_REPROJECTION_PLUGINS_STANDARD_PROJECTION_HPP
+#define IMAGE_REPROJECTION_PLUGINS_STANDARD_PROJECTION_HPP
 
 #include <vector>
 
-#include <image_reprojection/projection_plugin.hpp>
+#include <image_reprojection/projection_interface.hpp>
 #include <ros/console.h>
 #include <utility_headers/param.hpp>
 
@@ -13,11 +13,11 @@
 
 namespace image_reprojection_plugins {
 
-class StandardProjectionPlugin : public image_reprojection::ProjectionPlugin {
+class StandardProjection : public image_reprojection::ProjectionInterface {
    public:
-    StandardProjectionPlugin() {}
+    StandardProjection() {}
 
-    virtual ~StandardProjectionPlugin() {}
+    virtual ~StandardProjection() {}
 
    private:
     virtual void onInit() {
@@ -74,4 +74,4 @@ class StandardProjectionPlugin : public image_reprojection::ProjectionPlugin {
 };
 }
 
-#endif /* _IMAGE_REPROJECTION_PLUGINS_STANDARD_PROJECTION_PLUGIN_HPP_ */
+#endif /* IMAGE_REPROJECTION_PLUGINS_STANDARD_PROJECTION_HPP */

@@ -1,12 +1,12 @@
-#ifndef _IMAGE_REPROJECTION_IMAGE_REPROJECTION_HPP_
-#define _IMAGE_REPROJECTION_IMAGE_REPROJECTION_HPP_
+#ifndef IMAGE_REPROJECTION_IMAGE_REPROJECTION_HPP
+#define IMAGE_REPROJECTION_IMAGE_REPROJECTION_HPP
 
 #include <stdexcept>
 #include <string>
 
 #include <cv_bridge/cv_bridge.h>
-#include <image_reprojection/projection_plugin.hpp>
-#include <image_reprojection/transform_plugin.hpp>
+#include <image_reprojection/projection_interface.hpp>
+#include <image_reprojection/transform_interface.hpp>
 #include <image_transport/image_transport.h>
 #include <image_transport/publisher.h>
 #include <image_transport/subscriber.h>
@@ -31,8 +31,8 @@ namespace image_reprojection {
 class ImageReprojection : public nodelet::Nodelet {
    public:
     ImageReprojection()
-        : projection_loader_("image_reprojection", "image_reprojection::ProjectionPlugin"),
-          transform_loader_("image_reprojection", "image_reprojection::TransformPlugin") {}
+        : projection_loader_("image_reprojection", "image_reprojection::ProjectionInterface"),
+          transform_loader_("image_reprojection", "image_reprojection::TransformInterface") {}
 
     virtual ~ImageReprojection() {
         // stop using plugins
@@ -211,13 +211,13 @@ class ImageReprojection : public nodelet::Nodelet {
 
    private:
     // plugin loaders
-    pluginlib::ClassLoader<ProjectionPlugin> projection_loader_;
-    pluginlib::ClassLoader<TransformPlugin> transform_loader_;
+    pluginlib::ClassLoader<ProjectionInterface> projection_loader_;
+    pluginlib::ClassLoader<TransformInterface> transform_loader_;
 
     // plugins
-    ProjectionPluginPtr src_projection_;
-    ProjectionPluginPtr dst_projection_;
-    TransformPluginPtr transform_;
+    ProjectionInterfacePtr src_projection_;
+    ProjectionInterfacePtr dst_projection_;
+    TransformInterfacePtr transform_;
 
     // subscriber for source image and publisher for destination image
     image_transport::Subscriber subscriber_;
@@ -235,4 +235,4 @@ class ImageReprojection : public nodelet::Nodelet {
 };
 }
 
-#endif /* _IMAGE_REPROJECTION_IMAGE_REPROJECTION_HPP_ */
+#endif /* IMAGE_REPROJECTION_IMAGE_REPROJECTION_HPP */

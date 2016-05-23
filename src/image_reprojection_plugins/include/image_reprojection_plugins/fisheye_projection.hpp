@@ -1,8 +1,11 @@
-#ifndef _IMAGE_REPROJECTION_PLUGINS_FISHEYE_PROJECTION_PLUGIN_HPP_
-#define _IMAGE_REPROJECTION_PLUGINS_FISHEYE_PROJECTION_PLUGIN_HPP_
+#ifndef IMAGE_REPROJECTION_PLUGINS_FISHEYE_PROJECTION_HPP
+#define IMAGE_REPROJECTION_PLUGINS_FISHEYE_PROJECTION_HPP
+
+#include <cmath>
+#include <vector>
 
 #include <cv_extension/calib3d/calib3d.hpp>
-#include <image_reprojection/projection_plugin.hpp>
+#include <image_reprojection/projection_interface.hpp>
 #include <ros/console.h>
 #include <utility_headers/param.hpp>
 
@@ -10,11 +13,11 @@
 
 namespace image_reprojection_plugins {
 
-class FisheyeProjectionPlugin : public image_reprojection::ProjectionPlugin {
+class FisheyeProjection : public image_reprojection::ProjectionInterface {
    public:
-    FisheyeProjectionPlugin() {}
+    FisheyeProjection() {}
 
-    virtual ~FisheyeProjectionPlugin() {}
+    virtual ~FisheyeProjection() {}
 
    private:
     virtual void onInit() {
@@ -67,4 +70,4 @@ class FisheyeProjectionPlugin : public image_reprojection::ProjectionPlugin {
 };
 }
 
-#endif /* _IMAGE_REPROJECTION_PLUGINS_FISHEYE_PROJECTION_PLUGIN_HPP_ */
+#endif /* IMAGE_REPROJECTION_PLUGINS_FISHEYE_PROJECTION_HPP */

@@ -1,6 +1,6 @@
 <library path="lib/librotation_transform_plugin">
-  <class type="image_reprojection_plugins::RotationTransformPlugin"
-	 base_class_type="image_reprojection::TransformPlugin">
+  <class type="image_reprojection_plugins::RotationTransform"
+	 base_class_type="image_reprojection::TransformInterface">
     <description>
       This is a transform plugin that performs rotation transform
     </description>

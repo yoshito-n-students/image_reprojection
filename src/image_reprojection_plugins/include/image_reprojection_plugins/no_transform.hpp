@@ -1,18 +1,18 @@
-#ifndef _IMAGE_REPROJECTION_PLUGINS_NO_TRANSFORM_PLUGIN_HPP_
-#define _IMAGE_REPROJECTION_PLUGINS_NO_TRANSFORM_PLUGIN_HPP_
+#ifndef IMAGE_REPROJECTION_PLUGINS_NO_TRANSFORM_HPP
+#define IMAGE_REPROJECTION_PLUGINS_NO_TRANSFORM_HPP
 
-#include <image_reprojection/transform_plugin.hpp>
+#include <image_reprojection/transform_interface.hpp>
 #include <ros/console.h>
 
 #include <opencv2/core/core.hpp>
 
 namespace image_reprojection_plugins {
 
-class NoTransformPlugin : public image_reprojection::TransformPlugin {
+class NoTransform : public image_reprojection::TransformInterface {
    public:
-    NoTransformPlugin() {}
+    NoTransform() {}
 
-    virtual ~NoTransformPlugin() {}
+    virtual ~NoTransform() {}
 
    private:
     virtual void onInit() { ROS_INFO_STREAM(getName() << " has been initialized"); }
@@ -23,4 +23,4 @@ class NoTransformPlugin : public image_reprojection::TransformPlugin {
 };
 }
 
-#endif /* _IMAGE_REPROJECTION_PLUGINS_NO_TRANSFORM_PLUGIN_HPP_ */
+#endif /* IMAGE_REPROJECTION_PLUGINS_NO_TRANSFORM_HPP */
