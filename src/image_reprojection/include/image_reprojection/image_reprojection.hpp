@@ -115,6 +115,11 @@ class ImageReprojection : public nodelet::Nodelet {
 
     void onSrcRecieved(const sensor_msgs::ImageConstPtr &ros_src) {
         try {
+            // do nothing if there is no node that subscribes this node
+            if (publisher_.getNumSubscribers() == 0) {
+                return;
+            }
+
             // convert the ROS source image to an opencv image
             cv_bridge::CvImageConstPtr cv_src(cv_bridge::toCvShare(ros_src));
 
@@ -143,6 +148,11 @@ class ImageReprojection : public nodelet::Nodelet {
 
     void onSrcRecievedFast(const sensor_msgs::ImageConstPtr &ros_src) {
         try {
+            // do nothing if there is no node that subscribes this node
+            if (publisher_.getNumSubscribers() == 0) {
+                return;
+            }
+            
             // convert the ROS source image to an opencv image
             cv_bridge::CvImageConstPtr cv_src(cv_bridge::toCvShare(ros_src));
 
