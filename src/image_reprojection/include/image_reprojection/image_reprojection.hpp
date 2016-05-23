@@ -190,7 +190,7 @@ class ImageReprojection : public nodelet::Nodelet {
         {
             boost::lock_guard<boost::mutex> lock(mutex_);
             map_ = image_points_src.clone();
-            mask_ = cv::max(mask_src, mask_dst);
+            mask_ = cv::min(mask_src, mask_dst);
         }
     }
 
