@@ -9,6 +9,8 @@ find_package(catkin REQUIRED COMPONENTS
   image_transport
   roscpp
   sensor_msgs
+  tf
+  utility_headers
 )
 
 ## System dependencies are found with CMake's conventions
@@ -111,7 +113,7 @@ find_package(
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES image_reprojection_tools
-  CATKIN_DEPENDS cv_bridge image_transport roscpp sensor_msgs
+  CATKIN_DEPENDS cv_bridge image_transport roscpp sensor_msgs tf utility_headers
 #  DEPENDS system_lib
 )
 
@@ -141,6 +143,10 @@ add_executable(
   publish_image_files
   src/publish_image_files.cpp
   )
+add_executable(
+  dynamic_transform_publisher
+  src/dynamic_transform_publisher.cpp
+  )
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
@@ -152,6 +158,10 @@ target_link_libraries(
   ${catkin_LIBRARIES}
   ${Boost_LIBRARIES}
   ${OpenCV_LIBRARIES}
+  )
+target_link_libraries(
+  dynamic_transform_publisher
+  ${catkin_LIBRARIES}
   )
 
 #############
