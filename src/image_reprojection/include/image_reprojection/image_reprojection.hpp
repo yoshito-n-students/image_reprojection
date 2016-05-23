@@ -88,6 +88,10 @@ class ImageReprojection : public nodelet::Nodelet {
         }
         frame_dst_ = uhp::param<std::string>(pnh, "frame_dst", "reprojected_camera");
 
+        // init mapping between source and destination images
+        map_ = image_points_dst_.clone();
+        mask_ = cv::Mat::ones(map_.size(), CV_8UC1);
+
         // start image reprojection
         {
             image_transport::ImageTransport it(nh);
