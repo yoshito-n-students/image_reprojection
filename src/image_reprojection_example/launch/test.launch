@@ -12,6 +12,7 @@
       topic_dst: reprojected_image
       image_size_dst: [400,400]
       frame_dst: reprojected_camera
+      use_fast_mode: true
     </rosparam>
     <rosparam ns="src_projection">
       type: image_reprojection_plugins::FisheyeProjectionPlugin
