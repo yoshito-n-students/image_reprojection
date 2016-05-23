@@ -24,7 +24,7 @@ int main(int argc, char *argv[]) {
     // ROS initialization
     //
 
-    ros::init(argc, argv, "publish_image_files");
+    ros::init(argc, argv, "publish_image_files", ros::init_options::AnonymousName);
     ros::NodeHandle handle;
 
     //
