@@ -49,7 +49,7 @@ class TFTransform : public image_reprojection::TransformInterface {
         listener_.lookupTransform(frame_id_dst_, frame_id_src_, ros::Time(0.), tf_transform);
 
         // tf transform -> opencv transform
-        cv::Matx44d cv_transform(cv::Matx44d::eye());
+        cv::Matx34f cv_transform;
         for (int i = 0; i < 3; ++i) {
             for (int j = 0; j < 3; ++j) {
                 cv_transform(i, j) = tf_transform.getBasis()[i][j];

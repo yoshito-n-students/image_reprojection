@@ -7,42 +7,44 @@ namespace image_reprojection_plugins {
 
 class TransformHelper {
    public:
-    TransformHelper() {
-        set(cv::Matx44d::eye());
-    }
+    TransformHelper() { set(cv::Matx34f::eye()); }
 
     virtual ~TransformHelper() {}
 
-    void set(const cv::Matx44d& transform) {
-        transform_ = transform;
-        inverse_transform_ = transform_.inv();
+    void set(const cv::Matx34f& transform) {
+        // v1 = R * v2 + t
+        // -> v2 = inv(R) * (v1 - t)
+        // -> v2 = inv(R) * v1 - inv(R) * t
+        R_ = transform.get_minor<3, 3>(0, 0);
+        t_ = transform.get_minor<3, 1>(0, 3);
+        R_inv_ = R_.inv();
+        t_inv_ = -R_inv_ * t_;
     }
 
-    void transform(const cv::Mat& src, cv::Mat& dst) const { transform(src, transform_, dst); }
+    void transform(const cv::Mat& src, cv::Mat& dst) const { transform(src, R_, t_, dst); }
 
     void inverseTransform(const cv::Mat& src, cv::Mat& dst) const {
-        transform(src, inverse_transform_, dst);
+        transform(src, R_inv_, t_inv_, dst);
     }
 
    private:
-    static void transform(const cv::Mat& src, const cv::Matx44d& m, cv::Mat& dst) {
+    static void transform(const cv::Mat& src, const cv::Matx33f& R, const cv::Matx31f& t,
+                          cv::Mat& dst) {
         CV_Assert(src.type() == CV_32FC3);
 
         dst.create(src.size(), src.type());
         for (int x = 0; x < src.cols; ++x) {
             for (int y = 0; y < src.rows; ++y) {
-                const cv::Vec3f & s(src.at<cv::Vec3f>(y,x));
-                cv::Vec3f & d(dst.at<cv::Vec3f>(y,x));
-                d[0] = m(0,0)*s[0] + m(0,1)*s[1] + m(0,2)*s[2] + m(0,3);
-                d[1] = m(1,0)*s[0] + m(1,1)*s[1] + m(1,2)*s[2] + m(1,3);
-                d[2] = m(2,0)*s[0] + m(2,1)*s[1] + m(2,2)*s[2] + m(2,3);
+                dst.at<cv::Matx31f>(y, x) = R * src.at<cv::Matx31f>(y, x) + t;
             }
         }
     }
 
    private:
-    cv::Matx44d transform_;
-    cv::Matx44d inverse_transform_;
+    cv::Matx33f R_;
+    cv::Matx31f t_;
+    cv::Matx33f R_inv_;
+    cv::Matx31f t_inv_;
 };
 }
 #endif  // IMAGE_REPROJECTION_PLUGINS_TRANSFORM_HELPER_HPP
