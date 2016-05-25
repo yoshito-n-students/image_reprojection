@@ -6,6 +6,7 @@ project(image_reprojection_tools)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   cv_bridge
+  image_reprojection_plugins
   image_transport
   roscpp
   sensor_msgs
@@ -113,7 +114,7 @@ find_package(
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES image_reprojection_tools
-  CATKIN_DEPENDS cv_bridge image_transport roscpp sensor_msgs tf utility_headers
+  CATKIN_DEPENDS cv_bridge image_reprojection_plugins image_transport roscpp sensor_msgs tf utility_headers
 #  DEPENDS system_lib
 )
 
@@ -147,6 +148,10 @@ add_executable(
   dynamic_transform_publisher
   src/dynamic_transform_publisher.cpp
   )
+add_executable(
+  tf_echo_matrix
+  src/tf_echo_matrix.cpp
+)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
@@ -162,6 +167,11 @@ target_link_libraries(
 target_link_libraries(
   dynamic_transform_publisher
   ${catkin_LIBRARIES}
+  )
+target_link_libraries(
+  tf_echo_matrix
+  ${catkin_LIBRARIES}
+  ${OpenCV_LIBRARIES}
   )
 
 #############

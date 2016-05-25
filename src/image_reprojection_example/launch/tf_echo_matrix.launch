@@ -1,0 +1,6 @@
+<launch>
+    <!---->
+    <node pkg="tf" type="static_transform_publisher" name="static_transform_publisher" args="0 0 0 0 0 0 src dst 100" output="screen"/>
+    <!---->
+    <node pkg="image_reprojection_tools" type="tf_echo_matrix" name="tf_echo_matrix" args="src dst" output="screen"/>
+</launch>
