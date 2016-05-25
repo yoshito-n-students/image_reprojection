@@ -59,7 +59,7 @@ TEST(TestParam, CaseArithmetic) {
     }
 }
 
-TEST(TestParam, CaseVector) {
+TEST(TestParam, CaseStdVector) {
     // When no parameter is available on the parameter server ...
     uhp::del("~vector_param");
     {
@@ -80,7 +80,7 @@ TEST(TestParam, CaseVector) {
     }
 }
 
-TEST(TestParam, CaseArray) {
+TEST(TestParam, CaseBoostArray) {
     // When no parameter is available on the parameter server ...
     uhp::del("~array_param");
     EXPECT_EQ(3, uhp::param("~array_param", boost::array<int, 3>()).size());
@@ -108,7 +108,35 @@ TEST(TestParam, CaseArray) {
     }
 }
 
-TEST(TestParam, CaseMat) {
+TEST(TestParam, CaseCvVec) {
+    // When no parameter is available on the parameter server ...
+    uhp::del("~vec_param");
+    EXPECT_EQ(3, uhp::param("~vec_param", cv::Vec<int, 3>()).channels);
+    EXPECT_EQ(10, uhp::param("~vec_param", cv::Vec<int, 10>()).channels);
+
+    // When a parameter is available on the parameter server ...
+    {
+        const cv::Vec<double, 3> val(1.1, 2.2, 3.3);
+        uhp::set("~vec_param", val);
+    }
+    {
+        cv::Vec<double, 3> val;
+        EXPECT_TRUE(uhp::get("~vec_param", val));
+        EXPECT_TRUE(val[0] == 1.1 && val(1) == 2.2 && val[2] == 3.3);
+    }
+    {
+        // uhp::get should fail if the array size is wrong
+        cv::Vec<double, 10> val;
+        EXPECT_FALSE(uhp::get("~vec_param", val));
+    }
+    {
+        // should be able to be loaded another array type of another arithmetic type
+        const std::vector<int> val(uhp::param("~vec_param", std::vector<int>()));
+        EXPECT_TRUE(val[0] == 1 && val[1] == 2 && val[2] == 3);
+    }
+}
+
+TEST(TestParam, CaseCvMatx) {
     uhp::del("~mat_param");
     {
         cv::Matx33d val;
@@ -134,7 +162,7 @@ TEST(TestParam, CaseMat) {
     }
 }
 
-TEST(TestParam, CaseMap) {
+TEST(TestParam, CaseStdMap) {
     // When no parameter is available on the parameter server ...
     uhp::del("~map_param");
     {
