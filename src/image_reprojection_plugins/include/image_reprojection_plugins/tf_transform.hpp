@@ -44,21 +44,10 @@ class TFTransform : public image_reprojection::TransformInterface {
     }
 
     void setTransform() {
-        // get the latest tf transform
-        tf::StampedTransform tf_transform;
-        listener_.lookupTransform(frame_id_dst_, frame_id_src_, ros::Time(0.), tf_transform);
-
-        // tf transform -> opencv transform
-        cv::Matx34f cv_transform;
-        for (int i = 0; i < 3; ++i) {
-            for (int j = 0; j < 3; ++j) {
-                cv_transform(i, j) = tf_transform.getBasis()[i][j];
-            }
-            cv_transform(i, 3) = tf_transform.getOrigin()[i];
-        }
-
-        // set the opencv transform
-        helper_.set(cv_transform);
+        // get the latest transform and set it to the transformer
+        tf::StampedTransform transform;
+        listener_.lookupTransform(frame_id_dst_, frame_id_src_, ros::Time(0.), transform);
+        helper_.set(transform);
     }
 
    private:
