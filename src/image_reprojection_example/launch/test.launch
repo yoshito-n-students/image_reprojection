@@ -11,17 +11,25 @@
     <param name="dpitch" value="0.03"/>
   </node>
   <node pkg="image_reprojection" type="image_reprojection_node" name="image_reprojection_node" output="screen">
-    <rosparam>
-      topic_src: image
-      transport_src: compressed
-      topic_dst: reprojected_image
-      image_size_dst: [400,400]
-      frame_dst: reprojected_camera
-      use_fast_mode: true
+    <rosparam ns="src_image">
+      topic: image
+      transport: compressed
+    </rosparam>
+    <rosparam ns="dst_image">
+      topic: reprojected_image
+      size: [400,400]
+      frame_id: reprojected_camera
+    </rosparam>
+    <rosparam ns="map_update">
+      background: true
+      frequency: 10
+      size: [100,100]
     </rosparam>
     <rosparam ns="src_projection">
       type: image_reprojection_plugins::FisheyeProjection
       camera_matrix: [[275.,0.,480.],[0.,275.,480.],[0.,0.,1.]]
+      field_of_view: 3.142 # 180 deg
+      extrinsic_matrix: [[1.,0.,0.,0.],[0.,1.,0.,0.],[0.,0.,1.,0.]]
     </rosparam>
     <rosparam ns="transform">
       type: image_reprojection_plugins::TFTransform
@@ -31,6 +39,8 @@
     <rosparam ns="dst_projection">
       type: image_reprojection_plugins::StandardProjection
       camera_matrix: [[220.,0.,200.],[0.,220.,200.],[0.,0.,1.]]
+      field_of_view: [2.356,2.356] # 135x135 deg
+      extrinsic_matrix: [[1.,0.,0.,0.],[0.,1.,0.,0.],[0.,0.,1.,0.]]
     </rosparam>
   </node>
   <node pkg="rqt_image_view" type="rqt_image_view" name="rqt_image_view" output="screen"/>

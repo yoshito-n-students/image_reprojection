@@ -73,42 +73,49 @@ class ImageReprojection : public nodelet::Nodelet {
             transform_->init(pnh.resolveName("transform"), ros::M_string(), getMyArgv());
         }
 
-        // load parameters
+        // init mapping between source and destination images
         {
-            boost::array<int, 2> size = {500, 500};
-            uhp::get(pnh, "image_size_dst", size);
-            image_points_dst_.create(size[1], size[0], CV_32FC2);
-            for (int x = 0; x < size[0]; ++x) {
-                for (int y = 0; y < size[1]; ++y) {
-                    cv::Point2f &dst(image_points_dst_.at<cv::Point2f>(y, x));
-                    dst.x = x + 0.5;
-                    dst.y = y + 0.5;
+            // load sizes of the initial and final maps (must be initial <= final)
+            const cv::Vec2i size_dst(uhp::param(pnh, "dst_image/size", cv::Vec2i(500, 500)));
+            const cv::Vec2i size_seed(uhp::param(pnh, "map_update/size", cv::Vec2i(250, 250)));
+            CV_Assert(size_dst(0) >= size_seed(0) && size_dst(1) >= size_seed(0));
+
+            // init final map whose size is same as the destination image
+            map_.create(size_dst(1), size_dst(0), CV_32FC2);
+            for (int x = 0; x < map_.size().width; ++x) {
+                for (int y = 0; y < map_.size().height; ++y) {
+                    map_.at<cv::Point2f>(y, x) = cv::Point2f(x + 0.5, y + 0.5);
                 }
             }
-        }
-        frame_dst_ = uhp::param<std::string>(pnh, "frame_dst", "reprojected_camera");
+            mask_ = cv::Mat::ones(map_.size(), CV_8UC1);
 
-        // init mapping between source and destination images
-        map_ = image_points_dst_.clone();
-        mask_ = cv::Mat::ones(map_.size(), CV_8UC1);
+            // init the seed map by resizing the final map
+            cv::resize(map_, seed_map_, cv::Size(size_seed(0), size_seed(1)));
+        }
 
         // start image reprojection
         {
             image_transport::ImageTransport it(nh);
-            publisher_ =
-                it.advertise(uhp::param<std::string>(pnh, "topic_dst", "reprojected_image"), 1);
-            if (uhp::param(pnh, "use_fast_mode", false)) {
-                // fast mode setup
-                timer_ = nh.createTimer(ros::Rate(uhp::param(pnh, "map_update_frequency", 5.)),
+
+            // setup the dstination image publisher
+            publisher_ = it.advertise(
+                uhp::param<std::string>(pnh, "dst_image/topic", "reprojected_image"), 1);
+            frame_id_ = uhp::param<std::string>(pnh, "dst_image/fram_id", "reprojected_camera");
+
+            // setup the source image subscriber
+            const std::string topic_src(uhp::param<std::string>(pnh, "src_image/topic", "image"));
+            const std::string transport_src(
+                uhp::param<std::string>(pnh, "src_image/transport", "raw"));
+            if (uhp::param(pnh, "map_update/background", false)) {
+                // background mode setup
+                timer_ = nh.createTimer(ros::Rate(uhp::param(pnh, "map_update/frequency", 5.)),
                                         &ImageReprojection::onMapUpdateEvent, this);
-                subscriber_ = it.subscribe(uhp::param<std::string>(pnh, "topic_src", "image"), 1,
-                                           &ImageReprojection::onSrcRecievedFast, this,
-                                           uhp::param<std::string>(pnh, "transport_src", "raw"));
+                subscriber_ = it.subscribe(topic_src, 1, &ImageReprojection::onSrcRecievedFast,
+                                           this, transport_src);
             } else {
                 // normal mode setup
-                subscriber_ = it.subscribe(uhp::param<std::string>(pnh, "topic_src", "image"), 1,
-                                           &ImageReprojection::onSrcRecieved, this,
-                                           uhp::param<std::string>(pnh, "transport_src", "raw"));
+                subscriber_ = it.subscribe(topic_src, 1, &ImageReprojection::onSrcRecieved, this,
+                                           transport_src);
             }
         }
     }
@@ -127,7 +134,7 @@ class ImageReprojection : public nodelet::Nodelet {
             cv_bridge::CvImage cv_dst;
             cv_dst.header.seq = cv_src->header.seq;
             cv_dst.header.stamp = cv_src->header.stamp;
-            cv_dst.header.frame_id = frame_dst_;
+            cv_dst.header.frame_id = frame_id_;
             cv_dst.encoding = cv_src->encoding;
 
             // update mapping between the source and destination images
@@ -152,7 +159,7 @@ class ImageReprojection : public nodelet::Nodelet {
             if (publisher_.getNumSubscribers() == 0) {
                 return;
             }
-            
+
             // convert the ROS source image to an opencv image
             cv_bridge::CvImageConstPtr cv_src(cv_bridge::toCvShare(ros_src));
 
@@ -160,7 +167,7 @@ class ImageReprojection : public nodelet::Nodelet {
             cv_bridge::CvImage cv_dst;
             cv_dst.header.seq = cv_src->header.seq;
             cv_dst.header.stamp = cv_src->header.stamp;
-            cv_dst.header.frame_id = frame_dst_;
+            cv_dst.header.frame_id = frame_id_;
             cv_dst.encoding = cv_src->encoding;
 
             // fill the destination image by remapping the source image
@@ -183,24 +190,24 @@ class ImageReprojection : public nodelet::Nodelet {
 
     void updateMap() {
         // calculate mapping from destination image coord to destination object coord
-        cv::Mat object_points_dst;
+        cv::Mat map_dst;
         cv::Mat mask_dst;
-        dst_projection_->reproject(image_points_dst_, object_points_dst, mask_dst);
+        dst_projection_->reproject(seed_map_, map_dst, mask_dst);
 
         // calculate mapping to source object coord
-        cv::Mat object_points_src;
-        transform_->inverseTransform(object_points_dst, object_points_src);
+        cv::Mat map_trans;
+        transform_->inverseTransform(map_dst, map_trans);
 
         // calculate mapping to source image coord that is the final map
-        cv::Mat image_points_src;
+        cv::Mat map_src;
         cv::Mat mask_src;
-        src_projection_->project(object_points_src, image_points_src, mask_src);
+        src_projection_->project(map_trans, map_src, mask_src);
 
         // write updated mapping between source and destination images
         {
             boost::lock_guard<boost::mutex> lock(mutex_);
-            map_ = image_points_src.clone();
-            mask_ = cv::min(mask_src, mask_dst);
+            cv::resize(map_src, map_, map_.size());
+            cv::resize(cv::min(mask_dst, mask_src), mask_, mask_.size());
         }
     }
 
@@ -239,8 +246,8 @@ class ImageReprojection : public nodelet::Nodelet {
     ros::Timer timer_;
 
     // parameters
-    std::string frame_dst_;
-    cv::Mat image_points_dst_;
+    std::string frame_id_;
+    cv::Mat seed_map_;
 
     // mapping between source and destination images
     boost::mutex mutex_;
