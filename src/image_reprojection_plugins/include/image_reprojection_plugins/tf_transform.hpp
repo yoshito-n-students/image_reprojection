@@ -11,8 +11,6 @@
 #include <tf/transform_listener.h>
 #include <utility_headers/param.hpp>
 
-#include <opencv2/core/core.hpp>
-
 namespace image_reprojection_plugins {
 
 class TFTransform : public image_reprojection::TransformInterface {
