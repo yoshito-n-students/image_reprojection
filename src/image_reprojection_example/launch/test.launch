@@ -1,14 +1,19 @@
 <launch>
   <node pkg="image_reprojection_tools" type="publish_image_files" name="publish_image_files" output="screen">
-    <param name="frame_id" value="fisheye_camera"/>
-    <param name="encoding" value="bgr8"/>
-    <param name="frequency" value="10"/>
+    <rosparam>
+      frame_id: fisheye_camera
+      encoding: bgr8
+      frequency: 10
+    </rosparam>
+    <!-- find command does not work in a rosparam tag -->
     <param name="image_path" value="$(find image_reprojection_tools)/images"/>
   </node>
   <node pkg="image_reprojection_tools" type="dynamic_transform_publisher" name="dynamic_transform_publisher" output="screen">
-    <param name="frame_id" value="fisheye_camera"/>
-    <param name="child_frame_id" value="virtual_standard_camera"/>
-    <param name="dpitch" value="0.03"/>
+    <rosparam>
+      frame_id: fisheye_camera
+      child_frame_id: virtual_standard_camera
+      dpitch: 0.03
+    </rosparam>
   </node>
   <node pkg="image_reprojection" type="image_reprojection_node" name="image_reprojection_node" output="screen">
     <rosparam ns="src_image">
