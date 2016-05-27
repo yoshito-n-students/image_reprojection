@@ -1,0 +1,19 @@
+<launch>
+    <node pkg="image_reprojection_tools" type="superimpose_images" name="superimpose_images" output="screen">
+        <rosparam>
+          topic: superimposed_image
+          frame_id: superimpose_images
+          size: [1000,500]
+          layers:
+            - topic: top_image
+              transport: compressed
+              affine_matrix: [[1.,0.,0.],[0.,1.,0.]]
+              size: [500,500]
+              primary: true
+            - topic: middle_image
+              transport: raw
+            - topic: bottom_image
+              transport: compressed
+        </rosparam>
+    </node>
+</launch>

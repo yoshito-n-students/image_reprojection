@@ -8,6 +8,7 @@ find_package(catkin REQUIRED COMPONENTS
   cv_bridge
   image_reprojection_plugins
   image_transport
+  nodelet
   roscpp
   sensor_msgs
   tf
@@ -114,7 +115,7 @@ find_package(
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES image_reprojection_tools
-  CATKIN_DEPENDS cv_bridge image_reprojection_plugins image_transport roscpp sensor_msgs tf utility_headers
+  CATKIN_DEPENDS cv_bridge image_reprojection_plugins image_transport nodelet roscpp sensor_msgs tf utility_headers
 #  DEPENDS system_lib
 )
 
@@ -126,6 +127,7 @@ catkin_package(
 ## Your package locations should be listed before other locations
 # include_directories(include)
 include_directories(
+  include
   ${catkin_INCLUDE_DIRS}
   )
 
@@ -151,7 +153,11 @@ add_executable(
 add_executable(
   tf_echo_matrix
   src/tf_echo_matrix.cpp
-)
+  )
+add_executable(
+  superimpose_images
+  src/superimpose_images.cpp
+  )
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
@@ -170,6 +176,11 @@ target_link_libraries(
   )
 target_link_libraries(
   tf_echo_matrix
+  ${catkin_LIBRARIES}
+  ${OpenCV_LIBRARIES}
+  )
+target_link_libraries(
+  superimpose_images
   ${catkin_LIBRARIES}
   ${OpenCV_LIBRARIES}
   )
