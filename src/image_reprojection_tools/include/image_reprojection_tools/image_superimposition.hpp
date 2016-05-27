@@ -70,6 +70,8 @@ class ImageSuperimposition : public nodelet::Nodelet {
         for (std::size_t i = 0; i < params.size(); ++i) {
             layers_[i].affine_matrix = params[i].affine_matrix;
             layers_[i].size = params[i].size;
+            layers_[i].origin = params[i].origin;
+            layers_[i].image = cv::Mat::zeros(params[i].size, cv_bridge::getCvType(encoding_));
             layers_[i].subscriber = it.subscribe(
                 params[i].topic, 1,
                 boost::bind(params[i].primary ? &ImageSuperimposition::onPrimaryImageReceived
@@ -110,7 +112,7 @@ class ImageSuperimposition : public nodelet::Nodelet {
             // finally publish the superimposed image
             {
                 cv::AutoLock lock(mutex_);
-                dst.header.seq = seq_++;
+                dst.header.seq = (seq_++);
                 publisher_.publish(dst.toImageMsg());
             }
         } catch (const std::exception &ex) {
@@ -120,12 +122,12 @@ class ImageSuperimposition : public nodelet::Nodelet {
 
     void save(const sensor_msgs::ImageConstPtr &msg, Layer &layer) {
         // ROS -> opencv2
-        cv_bridge::CvImageConstPtr raw(cv_bridge::toCvShare(msg, encoding_));
+        cv_bridge::CvImageConstPtr image(cv_bridge::toCvShare(msg, encoding_));
 
         // do affine transform and save the transformed image
         {
             cv::AutoLock lock(layer.mutex);
-            cv::warpAffine(raw->image, layer.image, layer.affine_matrix, layer.size);
+            cv::warpAffine(image->image, layer.image, layer.affine_matrix, layer.size);
         }
     }
 

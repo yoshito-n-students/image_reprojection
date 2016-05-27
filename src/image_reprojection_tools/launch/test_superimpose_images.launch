@@ -1,19 +1,63 @@
 <launch>
+    <node pkg="image_reprojection_tools" type="publish_image_files" name="publish_ros_logo" output="screen">
+        <rosparam>
+          topic: ros_logo
+          frame_id: local_drive
+          encoding: bgr8
+          frequency: 10
+        </rosparam>
+        <!-- find command does not work in a rosparam tag -->
+        <param name="image_path" value="$(find image_reprojection_tools)/images/ros/logo.png"/>
+    </node>
+    <node pkg="image_reprojection_tools" type="publish_image_files" name="publish_jade_turtle" output="screen">
+        <rosparam>
+          topic: jade_turtle
+          frame_id: local_drive
+          encoding: bgr8
+          frequency: 10
+        </rosparam>
+        <!-- find command does not work in a rosparam tag -->
+        <param name="image_path" value="$(find image_reprojection_tools)/images/ros/jade_turtle.jpg"/>
+    </node>
+    <node pkg="image_reprojection_tools" type="publish_image_files" name="publish_jade_turtle_inv" output="screen">
+        <rosparam>
+          topic: jade_turtle_inv
+          frame_id: local_drive
+          encoding: bgr8
+          frequency: 10
+        </rosparam>
+        <!-- find command does not work in a rosparam tag -->
+        <param name="image_path" value="$(find image_reprojection_tools)/images/ros/jade_turtle_inv.jpg"/>
+    </node>
     <node pkg="image_reprojection_tools" type="superimpose_images" name="superimpose_images" output="screen">
         <rosparam>
           topic: superimposed_image
           frame_id: superimpose_images
-          size: [1000,500]
-          layers:
-            - topic: top_image
+          encoding: bgr8
+          size: [480,519]
+          layers: # top to bottom
+            # top layer
+            - topic: ros_logo
+              transport: compressed
+              affine_matrix: [[-1.,0.,202.],[0.,-1.,57.]]
+              size: [203,58]
+              origin: [138,230]
+              primary: false
+            # middle layer
+            - topic: jade_turtle
               transport: compressed
               affine_matrix: [[1.,0.,0.],[0.,1.,0.]]
-              size: [500,500]
+              size: [240,519]
+              origin: [0,0]
               primary: true
-            - topic: middle_image
-              transport: raw
-            - topic: bottom_image
+            # bottom layer
+            - topic: jade_turtle_inv
               transport: compressed
+              affine_matrix: [[1.,0.,-240.],[0.,1.,0.]]
+              size: [240,519]
+              origin: [240,0]
+              primary: false
         </rosparam>
     </node>
+    <node pkg="rqt_image_view" type="rqt_image_view" name="rqt_image_view" output="screen"/>
 </launch>
