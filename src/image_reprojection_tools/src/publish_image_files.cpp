@@ -8,10 +8,10 @@
 #include <ros/duration.h>
 #include <ros/init.h>
 #include <ros/node_handle.h>
-#include <ros/param.h>
 #include <ros/rate.h>
 #include <ros/time.h>
 #include <sensor_msgs/Image.h>
+#include <utility_headers/param.hpp>
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
@@ -20,6 +20,8 @@
 #include <opencv2/highgui/highgui.hpp>
 
 int main(int argc, char *argv[]) {
+    namespace uhp = utility_headers::param;
+
     //
     // ROS initialization
     //
@@ -31,20 +33,11 @@ int main(int argc, char *argv[]) {
     // load parameters
     //
 
-    std::string frame_id;
-    ros::param::param<std::string>("~frame_id", frame_id, "camera");
-
-    std::string encoding;
-    ros::param::param<std::string>("~encoding", encoding, "bgr8");
-
-    double frequency;
-    ros::param::param("~frequency", frequency, 10.);
-
+    const std::string frame_id(uhp::param<std::string>("~frame_id", "camera"));
+    const std::string encoding(uhp::param<std::string>("~encoding",  "bgr8"));
+    ros::Rate rate(uhp::param<double>("~frequency", 10.));
     std::string image_path;
-    if (!ros::param::get("~image_path", image_path)) {
-        ROS_ERROR("~image_path must be given");
-        return 0;
-    }
+    uhp::getRequired("~image_path",image_path);
 
     //
     // load image files
@@ -82,13 +75,13 @@ int main(int argc, char *argv[]) {
     //
 
     image_transport::ImageTransport image_handle(handle);
-    image_transport::Publisher image_publisher(image_handle.advertise("image", 1));
+    image_transport::Publisher image_publisher(
+        image_handle.advertise(uhp::param<std::string>("~topic", "image"), 1));
 
     //
     // main loop
     //
 
-    ros::Rate rate(frequency);
     for (unsigned int seq = 0; ros::ok(); ++seq) {
         sensor_msgs::ImagePtr msg(image_msgs[seq % image_msgs.size()]);
         msg->header.seq = seq;
