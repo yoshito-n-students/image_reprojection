@@ -41,7 +41,15 @@ class ImageSuperimposition : public nodelet::Nodelet {
    public:
     ImageSuperimposition() {}
 
-    virtual ~ImageSuperimposition() {}
+    virtual ~ImageSuperimposition() {
+        // shutdown all subscribers before the publisher
+        // or a subscriber may call the publisher inactivated prior to the subscriber
+        for (std::vector<Layer>::iterator layer = layers_.begin(); layer != layers_.end();
+             ++layer) {
+            layer->subscriber.shutdown();
+        }
+        publisher_.shutdown();
+    }
 
    private:
     virtual void onInit() {
@@ -85,17 +93,18 @@ class ImageSuperimposition : public nodelet::Nodelet {
 
     void onImageReceived(const sensor_msgs::ImageConstPtr &msg, Layer &layer) {
         try {
-            // just seve this image message
-            save(msg, layer);
+            // just save this image message
+            updateLayer(msg, layer);
         } catch (const std::exception &ex) {
-            ROS_ERROR_STREAM("onImageReceived: " << ex.what());
+            ROS_ERROR_STREAM("onImageReceived: " << layer.subscriber.getTopic() << ": "
+                                                 << ex.what());
         }
     }
 
     void onPrimaryImageReceived(const sensor_msgs::ImageConstPtr &msg, Layer &layer) {
         try {
             // first save this image message
-            save(msg, layer);
+            updateLayer(msg, layer);
 
             // do nothing further if there is no node that subscribes this node
             if (publisher_.getNumSubscribers() == 0) {
@@ -116,11 +125,12 @@ class ImageSuperimposition : public nodelet::Nodelet {
                 publisher_.publish(dst.toImageMsg());
             }
         } catch (const std::exception &ex) {
-            ROS_ERROR_STREAM("onPrimaryImageReceived: " << ex.what());
+            ROS_ERROR_STREAM("onPrimaryImageReceived: " << layer.subscriber.getTopic() << ": "
+                                                        << ex.what());
         }
     }
 
-    void save(const sensor_msgs::ImageConstPtr &msg, Layer &layer) {
+    void updateLayer(const sensor_msgs::ImageConstPtr &msg, Layer &layer) {
         // ROS -> opencv2
         cv_bridge::CvImageConstPtr image(cv_bridge::toCvShare(msg, encoding_));
 
