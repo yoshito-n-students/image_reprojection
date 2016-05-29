@@ -115,7 +115,7 @@ find_package(
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES 
-  fisheye_projection_plugin no_projection_plugin standard_projection_plugin 
+  combined_projection_plugin fisheye_projection_plugin no_projection_plugin standard_projection_plugin 
   no_transform_plugin rotation_transform_plugin tf_transform_plugin
   CATKIN_DEPENDS image_reprojection pluginlib roscpp std_msgs
 #  DEPENDS system_lib
@@ -134,6 +134,10 @@ include_directories(
   )
 
 ## Declare a C++ library
+add_library(
+  combined_projection_plugin
+  src/combined_projection_plugin.cpp
+  )
 add_library(
   fisheye_projection_plugin
   src/fisheye_projection_plugin.cpp
@@ -172,6 +176,11 @@ add_library(
 # add_dependencies(image_reprojection_plugins_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
+target_link_libraries(
+  combined_projection_plugin
+  ${catkin_LIBRARIES}
+  ${OpenCV_LIBRARIES}
+  )
 target_link_libraries(
   fisheye_projection_plugin
   ${catkin_LIBRARIES}

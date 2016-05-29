@@ -59,6 +59,7 @@
   <!-- The export tag contains other, unspecified, tags -->
   <export>
     <!-- Other tools can request additional information be placed here -->
+    <image_reprojection plugin="${prefix}/plugin_descriptions/combined_projection_plugin.xml" />
     <image_reprojection plugin="${prefix}/plugin_descriptions/fisheye_projection_plugin.xml" />
     <image_reprojection plugin="${prefix}/plugin_descriptions/no_projection_plugin.xml" />
     <image_reprojection plugin="${prefix}/plugin_descriptions/standard_projection_plugin.xml" />
