@@ -24,6 +24,7 @@ find_package(
   OpenCV REQUIRED COMPONENTS
   core
   highgui
+  imgproc
   )
 
 
@@ -158,6 +159,10 @@ add_executable(
   superimpose_images
   src/superimpose_images.cpp
   )
+add_executable(
+  get_cv_transform
+  src/get_cv_transform.cpp
+  )
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
@@ -181,6 +186,11 @@ target_link_libraries(
   )
 target_link_libraries(
   superimpose_images
+  ${catkin_LIBRARIES}
+  ${OpenCV_LIBRARIES}
+  )
+target_link_libraries(
+  get_cv_transform
   ${catkin_LIBRARIES}
   ${OpenCV_LIBRARIES}
   )
