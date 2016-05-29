@@ -34,6 +34,26 @@ namespace param {
 template <typename T, typename EnableIf = void>
 struct Helper;
 
+// for XmlRpcValue
+template <>
+struct Helper<XmlRpc::XmlRpcValue> {
+    typedef XmlRpc::XmlRpcValue ValueType;
+    typedef XmlRpc::XmlRpcValue XrvType;
+
+    static bool cast(const XrvType &src, ValueType &dst) {
+        dst = src;
+        return true;
+    }
+
+    //static void cast(const ValueType &src, XrvType &dst) { dst = src; }
+
+    static bool get(const std::string &name, ValueType &val) { return ros::param::get(name, val); }
+
+    static void set(const std::string &name, const ValueType &val) { ros::param::set(name, val); }
+
+    static void write(const ValueType &val, std::ostream &ost) { val.write(ost); }
+};
+
 // for bool
 template <>
 struct Helper<bool> {
@@ -54,7 +74,7 @@ struct Helper<bool> {
 
     static void set(const std::string &name, const ValueType &val) { ros::param::set(name, val); }
 
-    static bool write(const ValueType &val, std::ostream &ost) { ost << val; }
+    static void write(const ValueType &val, std::ostream &ost) { ost << val; }
 };
 
 // for integral
@@ -88,7 +108,7 @@ struct Helper<T, typename boost::enable_if<boost::is_integral<T> >::type> {
 
     static void set(const std::string &name, const ValueType &val) { ros::param::set(name, val); }
 
-    static bool write(const ValueType &val, std::ostream &ost) { ost << val; }
+    static void write(const ValueType &val, std::ostream &ost) { ost << val; }
 };
 
 // for floating point
@@ -122,7 +142,7 @@ struct Helper<T, typename boost::enable_if<boost::is_floating_point<T> >::type> 
 
     static void set(const std::string &name, const ValueType &val) { ros::param::set(name, val); }
 
-    static bool write(const ValueType &val, std::ostream &ost) { ost << val; }
+    static void write(const ValueType &val, std::ostream &ost) { ost << val; }
 };
 
 // for std::string
@@ -145,7 +165,7 @@ struct Helper<std::string> {
 
     static void set(const std::string &name, const ValueType &val) { ros::param::set(name, val); }
 
-    static bool write(const ValueType &val, std::ostream &ost) { ost << val; }
+    static void write(const ValueType &val, std::ostream &ost) { ost << val; }
 };
 
 // for std::vector
@@ -195,11 +215,10 @@ struct Helper<std::vector<T, A> > {
         ros::param::set(name, xrv);
     }
 
-    static bool write(const ValueType &val, std::ostream &ost) {
+    static void write(const ValueType &val, std::ostream &ost) {
         XrvType xrv;
         ThisType::cast(val, xrv);
         xrv.write(ost);
-        return true;
     }
 };
 
@@ -252,11 +271,10 @@ struct Helper<boost::array<T, N> > {
         ros::param::set(name, xrv);
     }
 
-    static bool write(const ValueType &val, std::ostream &ost) {
+    static void write(const ValueType &val, std::ostream &ost) {
         XrvType xrv;
         ThisType::cast(val, xrv);
         xrv.write(ost);
-        return true;
     }
 };
 
@@ -309,11 +327,10 @@ struct Helper<cv::Vec<T, N> > {
         ros::param::set(name, xrv);
     }
 
-    static bool write(const ValueType &val, std::ostream &ost) {
+    static void write(const ValueType &val, std::ostream &ost) {
         XrvType xrv;
         ThisType::cast(val, xrv);
         xrv.write(ost);
-        return true;
     }
 };
 
@@ -382,11 +399,10 @@ struct Helper<cv::Matx<T, M, N> > {
         ros::param::set(name, xrv);
     }
 
-    static bool write(const ValueType &val, std::ostream &ost) {
+    static void write(const ValueType &val, std::ostream &ost) {
         XrvType xrv;
         ThisType::cast(val, xrv);
         xrv.write(ost);
-        return true;
     }
 };
 
@@ -442,11 +458,10 @@ struct Helper<std::map<std::string, T, C, A> > {
         ros::param::set(name, xrv);
     }
 
-    static bool write(const ValueType &val, std::ostream &ost) {
+    static void write(const ValueType &val, std::ostream &ost) {
         XrvType xrv;
         ThisType::cast(val, xrv);
         xrv.write(ost);
-        return true;
     }
 };
 
