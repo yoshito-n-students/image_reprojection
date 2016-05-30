@@ -3,16 +3,16 @@
     <rosparam>
       frame_id: fisheye_camera
       encoding: bgr8
-      frequency: 10
+      frequency: 16
     </rosparam>
     <!-- find command does not work in a rosparam tag -->
-    <param name="image_path" value="$(find image_reprojection_tools)/images"/>
+    <param name="image_path" value="$(find image_reprojection_tools)/images/theta"/>
   </node>
   <node pkg="image_reprojection_tools" type="dynamic_transform_publisher" name="dynamic_transform_publisher" output="screen">
     <rosparam>
       frame_id: fisheye_camera
       child_frame_id: virtual_standard_camera
-      dpitch: 0.03
+      dyaw: 0.03
     </rosparam>
   </node>
   <node pkg="image_reprojection" type="image_reprojection_node" name="image_reprojection_node" output="screen">
@@ -27,14 +27,21 @@
     </rosparam>
     <rosparam ns="map_update">
       background: true
-      frequency: 10
+      frequency: 16
       size: [100,100]
     </rosparam>
     <rosparam ns="src_projection">
-      type: image_reprojection_plugins::FisheyeProjection
-      camera_matrix: [[275.,0.,480.],[0.,275.,480.],[0.,0.,1.]]
-      field_of_view: 3.142 # 180 deg
-      extrinsic_matrix: [[1.,0.,0.,0.],[0.,1.,0.,0.],[0.,0.,1.,0.]]
+      type: image_reprojection_plugins::CombinedProjection
+      front_fisheye:
+        type: image_reprojection_plugins::FisheyeProjection
+        camera_matrix: [[275.,0.,480.],[0.,275.,480.],[0.,0.,1.]]
+        field_of_view: deg(180.1)
+        extrinsic_matrix: [[0,0,-1,0],[0,1,0,0],[1,0,0,0]]
+      back_fisheye:
+        type: image_reprojection_plugins::FisheyeProjection
+        camera_matrix: [[275.,0.,1440.],[0.,275.,480.],[0.,0.,1.]]
+        field_of_view: deg(180.1)
+        extrinsic_matrix: [[0,0,1,0],[0,1,0,0],[-1,0,0,0]]
     </rosparam>
     <rosparam ns="transform">
       type: image_reprojection_plugins::TFTransform
@@ -44,8 +51,8 @@
     <rosparam ns="dst_projection">
       type: image_reprojection_plugins::StandardProjection
       camera_matrix: [[220.,0.,200.],[0.,220.,200.],[0.,0.,1.]]
-      field_of_view: [2.356,2.356] # 135x135 deg
-      extrinsic_matrix: [[1.,0.,0.,0.],[0.,1.,0.,0.],[0.,0.,1.,0.]]
+      field_of_view: [deg(135),deg(135)]
+      extrinsic_matrix: [[0,-1,0,0],[0,0,-1,0],[1,0,0,0]]
     </rosparam>
   </node>
   <node pkg="rqt_image_view" type="rqt_image_view" name="rqt_image_view" output="screen"/>

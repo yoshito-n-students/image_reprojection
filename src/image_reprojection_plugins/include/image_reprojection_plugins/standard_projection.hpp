@@ -66,6 +66,7 @@ class StandardProjection : public image_reprojection::ProjectionInterface {
         // reproject 2D points in the image coordinate to the camera coordinate
         cv::Mat cam_2d;
         cv::undistortPoints(src.reshape(2, src.total()), cam_2d, camera_matrix_, dist_coeffs_);
+        cam_2d = cam_2d.reshape(2, src.size().height);
 
         // add z-channel to the points in the camera coordinate
         cv::Mat cam(cam_2d.size(), CV_32FC3);

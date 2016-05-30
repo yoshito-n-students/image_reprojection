@@ -62,7 +62,7 @@ class CombinedProjection : public image_reprojection::ProjectionInterface {
             }
         }
 
-        ROS_INFO_STREAM(getName() << "has been initialized");
+        ROS_INFO_STREAM(getName() << " has been initialized");
     }
 
     virtual void onProject(const cv::Mat& src, cv::Mat& dst, cv::Mat& mask) {
