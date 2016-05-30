@@ -1,4 +1,6 @@
+#include <algorithm>
 #include <sstream>
+#include <string>
 
 #include <image_reprojection_plugins/transform_helper.hpp>
 #include <ros/console.h>
@@ -38,12 +40,15 @@ int main(int argc, char *argv[]) {
             tf::StampedTransform transform;
             listener.lookupTransform(args[2], args[1], ros::Time(0), transform);
 
-            // print the latest transform matrix
+            // print the latest transform matrix in yaml format
             helper.set(transform);
             {
                 std::ostringstream oss;
                 uhp::Helper<cv::Matx34f>::write(helper.get(), oss);
-                ROS_INFO_STREAM(args[1] << " -> " << args[2] << " : " << oss.str());
+                std::string str(oss.str());
+                std::replace(str.begin(), str.end(), '{', '[');
+                std::replace(str.begin(), str.end(), '}', ']');
+                ROS_INFO_STREAM(args[1] << " -> " << args[2] << " : " << str);
             }
         } catch (const tf::TransformException &ex) {
             ROS_ERROR_STREAM(ex.what());
