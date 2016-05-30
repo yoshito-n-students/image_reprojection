@@ -1,6 +1,11 @@
 <launch>
-    <!---->
-    <node pkg="tf" type="static_transform_publisher" name="static_transform_publisher" args="0 0 0 0 0 0 src dst 100" output="screen"/>
-    <!---->
-    <node pkg="image_reprojection_tools" type="tf_echo_matrix" name="tf_echo_matrix" args="src dst" output="screen"/>
+    <!-- Recoh Theta S: device center to front fisheye -->
+    <node pkg="tf" type="static_transform_publisher" name="front_fisheye_publisher" args="0 0 0 0 1.5708 0 theta_s front_fisheye 100" output="screen"/>
+    <node pkg="image_reprojection_tools" type="tf_echo_matrix" name="echo_front_fisheye" args="theta_s front_fisheye" output="screen"/>
+    <!-- Recoh Theta S: device center to back fisheye -->
+    <node pkg="tf" type="static_transform_publisher" name="back_fisheye_publisher" args="0 0 0 0 -1.5708 0 theta_s back_fisheye 100" output="screen"/>
+    <node pkg="image_reprojection_tools" type="tf_echo_matrix" name="echo_back_fisheye" args="theta_s back_fisheye" output="screen"/>
+    <!-- Virtual camera: device center to standard lens -->
+    <node pkg="tf" type="static_transform_publisher" name="virtual_camera_publisher" args="0 0 0 -1.5708 0 -1.5708 virtual_camera standard_lens 100" output="screen"/>
+    <node pkg="image_reprojection_tools" type="tf_echo_matrix" name="echo_virtual_camera" args="virtual_camera standard_lens" output="screen"/>
 </launch>
