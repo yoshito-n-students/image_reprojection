@@ -14,7 +14,6 @@
 #include <pluginlib/class_loader.h>
 #include <ros/console.h>
 #include <ros/node_handle.h>
-#include <ros/param.h>
 #include <ros/rate.h>
 #include <ros/timer.h>
 #include <sensor_msgs/Image.h>
