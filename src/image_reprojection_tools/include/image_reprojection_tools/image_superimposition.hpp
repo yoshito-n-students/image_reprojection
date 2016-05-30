@@ -1,6 +1,7 @@
 #ifndef IMAGE_REPROJECTION_TOOS_IMAGE_SUPERIMPOSITION_HPP
 #define IMAGE_REPROJECTION_TOOS_IMAGE_SUPERIMPOSITION_HPP
 
+#include <cmath>
 #include <string>
 #include <vector>
 
@@ -30,9 +31,9 @@ class ImageSuperimposition : public nodelet::Nodelet {
     struct Layer {
         // constant
         image_transport::Subscriber subscriber;
-        cv::Matx23f affine_matrix;
-        cv::Size size;
-        cv::Point origin;
+        cv::Matx33f perspective;
+        cv::Mat mask;
+        double transparency;
         // mutable
         cv::Mat image;
         mutable cv::Mutex mutex;  // use mutable tag to lock for read-only use
@@ -76,10 +77,60 @@ class ImageSuperimposition : public nodelet::Nodelet {
         // setup workers for layers
         layers_.resize(params.size());
         for (std::size_t i = 0; i < params.size(); ++i) {
-            layers_[i].affine_matrix = params[i].affine_matrix;
-            layers_[i].size = params[i].size;
-            layers_[i].origin = params[i].origin;
-            layers_[i].image = cv::Mat::zeros(params[i].size, cv_bridge::getCvType(encoding_));
+            // copy if 'transform' param is a 2x3 (affine) or 3x3 (perspective) matrix
+            layers_[i].perspective = cv::Matx33f::eye();
+            if (params[i].transform.size() == 2 || params[i].transform.size() == 3) {
+                for (int j = 0; j < params[i].transform.size(); ++j) {
+                    for (int k = 0; k < 3; ++k) {
+                        layers_[i].perspective(j, k) = params[i].transform[j][k];
+                    }
+                }
+            }
+            ROS_INFO_STREAM(layers_[i].perspective);
+
+            // create a mask that indicates AOI (area of interest)
+            if (params[i].aoi.size() < 2) {
+                // 'AOI' param that has 0 or 1 point: default AOI: whole area of the result image
+                layers_[i].mask = cv::Mat::ones(size_, CV_8UC1);
+            } else {
+                std::vector<cv::Vec2f> aoi;
+                if (params[i].aoi.size() == 2) {
+                    // 'AOI' param that has 2 points: rectangle AOI
+                    aoi.push_back(params[i].aoi[0]);
+                    aoi.push_back(cv::Vec2f(params[i].aoi[0][0], params[i].aoi[1][1]));
+                    aoi.push_back(params[i].aoi[1]);
+                    aoi.push_back(cv::Vec2f(params[i].aoi[1][0], params[i].aoi[0][1]));
+                } else {
+                    // 'AOI' param that has 3+ points: polygon AOI
+                    aoi = params[i].aoi;
+                }
+
+                // apply the perspective transform to the AOI
+                std::vector<cv::Vec2f> transformed_aoi;
+                cv::perspectiveTransform(aoi, transformed_aoi, layers_[i].perspective);
+
+                // create a mask as the filled AOI
+                layers_[i].mask = cv::Mat::zeros(size_, CV_8UC1);
+                {
+                    // convert floating-points to integers
+                    // because cv::perspectiveTransform supports the former only
+                    // and cv::fillPoly supports the latter only
+                    std::vector<std::vector<cv::Point> > polygon(1);
+                    for (int j = 0; j < transformed_aoi.size(); ++j) {
+                        // standard c++ lib does not contain 'std::round', but c contains 'round'
+                        polygon[0].push_back(cv::Point(::round(transformed_aoi[j][0]), ::round(transformed_aoi[j][1])));
+                    }
+                    cv::fillPoly(layers_[i].mask, polygon, 1);
+                }
+            }
+
+            // copy cliped transparency [0,1]
+            layers_[i].transparency = std::min(std::max(params[i].transparency, 0.), 1.);
+
+            // create a brank layer image
+            layers_[i].image = cv::Mat::zeros(size_, cv_bridge::getCvType(encoding_));
+
+            // launch a subscriber
             layers_[i].subscriber = it.subscribe(
                 params[i].topic, 1,
                 boost::bind(params[i].primary ? &ImageSuperimposition::onPrimaryImageReceived
@@ -132,22 +183,26 @@ class ImageSuperimposition : public nodelet::Nodelet {
 
     void updateLayer(const sensor_msgs::ImageConstPtr &msg, Layer &layer) {
         // ROS -> opencv2
-        cv_bridge::CvImageConstPtr image(cv_bridge::toCvShare(msg, encoding_));
+        const cv_bridge::CvImageConstPtr image(cv_bridge::toCvShare(msg, encoding_));
 
-        // do affine transform and save the transformed image
+        // do perspective transform and save the transformed image
         {
             cv::AutoLock lock(layer.mutex);
-            cv::warpAffine(image->image, layer.image, layer.affine_matrix, layer.size);
+            cv::warpPerspective(image->image, layer.image, layer.perspective, size_);
         }
     }
 
-    cv::Mat superimposeLayers() {
+    cv::Mat superimposeLayers() const {
         // stack layers from bottom to top
         cv::Mat image(cv::Mat::zeros(size_, cv_bridge::getCvType(encoding_)));
         for (std::vector<Layer>::const_reverse_iterator layer = layers_.rbegin();
              layer != layers_.rend(); ++layer) {
-            cv::AutoLock lock(layer->mutex);
-            layer->image.copyTo(image(cv::Rect(layer->origin, layer->size)));
+            cv::Mat this_image(layer->transparency * image);
+            {
+                cv::AutoLock lock(layer->mutex);
+                this_image += (1. - layer->transparency) * layer->image;
+            }
+            this_image.copyTo(image, layer->mask);
         }
         return image;
     }
