@@ -116,7 +116,7 @@ catkin_package(
   INCLUDE_DIRS include
   LIBRARIES 
   combined_projection_plugin fisheye_projection_plugin no_projection_plugin standard_projection_plugin 
-  no_transform_plugin rotation_transform_plugin tf_transform_plugin
+  combined_transform_plugin no_transform_plugin rotation_transform_plugin tf_transform_plugin
   CATKIN_DEPENDS image_reprojection pluginlib roscpp std_msgs
 #  DEPENDS system_lib
 )
@@ -149,6 +149,10 @@ add_library(
 add_library(
   standard_projection_plugin
   src/standard_projection_plugin.cpp
+  )
+add_library(
+  combined_transform_plugin
+  src/combined_transform_plugin.cpp
   )
 add_library(
   no_transform_plugin
@@ -193,6 +197,11 @@ target_link_libraries(
   )
 target_link_libraries(
   standard_projection_plugin
+  ${catkin_LIBRARIES}
+  ${OpenCV_LIBRARIES}
+  )
+target_link_libraries(
+  combined_transform_plugin
   ${catkin_LIBRARIES}
   ${OpenCV_LIBRARIES}
   )

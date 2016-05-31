@@ -1,0 +1,8 @@
+<library path="lib/libcombined_transform_plugin">
+  <class type="image_reprojection_plugins::CombinedTransform"
+	 base_class_type="image_reprojection::TransformInterface">
+    <description>
+      This is a transform plugin that performs combined transform
+    </description>
+  </class>
+</library>
