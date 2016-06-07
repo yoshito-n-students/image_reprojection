@@ -3,7 +3,7 @@
     <rosparam>
       frame_id: fisheye_camera
       encoding: bgr8
-      frequency: 16
+      frequency: 30
     </rosparam>
     <!-- find command does not work in a rosparam tag -->
     <param name="image_path" value="$(find image_reprojection_tools)/images/theta"/>
@@ -12,7 +12,8 @@
     <rosparam>
       frame_id: fisheye_camera
       child_frame_id: virtual_standard_camera
-      dyaw: 0.03
+      frequency: 30
+      dyaw: deg(0.3)
     </rosparam>
   </node>
   <node pkg="image_reprojection" type="image_reprojection_node" name="image_reprojection_node" output="screen">
@@ -27,7 +28,7 @@
     </rosparam>
     <rosparam ns="map_update">
       background: true
-      frequency: 16
+      frequency: 30
       size: [100,100]
     </rosparam>
     <rosparam ns="src_projection">
