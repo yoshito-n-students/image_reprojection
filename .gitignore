@@ -27,8 +27,3 @@
 *.out
 *.app
 
-# ROS
-.catkin_workspace
-build/
-devel/
-src/CMakeLists.txt
