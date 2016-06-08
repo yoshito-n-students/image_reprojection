@@ -11,6 +11,8 @@
 #include <ros/time.h>
 #include <tf/transform_listener.h>
 
+#include <boost/shared_ptr.hpp>
+
 namespace image_reprojection_plugins {
 
 class TFTransform : public image_reprojection::TransformInterface {
@@ -21,10 +23,13 @@ class TFTransform : public image_reprojection::TransformInterface {
 
    private:
     virtual void onInit() {
+        const ros::NodeHandle& nh(getNodeHandle());
         const ros::NodeHandle& pnh(getPrivateNodeHandle());
 
         frame_id_src_ = param_utilities::param<std::string>(pnh, "frame_id_src", "world");
         frame_id_dst_ = param_utilities::param<std::string>(pnh, "frame_id_dst", "dst");
+
+        listener_.reset(new tf::TransformListener(nh));
 
         ROS_INFO_STREAM(getName() << " has been initialized");
     }
@@ -42,7 +47,7 @@ class TFTransform : public image_reprojection::TransformInterface {
     void setTransform() {
         // get the latest transform and set it to the transformer
         tf::StampedTransform transform;
-        listener_.lookupTransform(frame_id_dst_, frame_id_src_, ros::Time(0.), transform);
+        listener_->lookupTransform(frame_id_dst_, frame_id_src_, ros::Time(0.), transform);
         helper_.set(transform);
     }
 
@@ -52,7 +57,7 @@ class TFTransform : public image_reprojection::TransformInterface {
     std::string frame_id_dst_;
 
     // worker objects
-    tf::TransformListener listener_;
+    boost::shared_ptr<tf::TransformListener> listener_;
     TransformHelper helper_;
 };
 }
