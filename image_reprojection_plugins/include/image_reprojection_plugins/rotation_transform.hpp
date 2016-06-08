@@ -3,11 +3,11 @@
 
 #include <geometry_msgs/Quaternion.h>
 #include <image_reprojection/transform_interface.hpp>
+#include <param_utilities/param_utilities.hpp>
 #include <ros/console.h>
 #include <ros/node_handle.h>
 #include <ros/service_server.h>
 #include <tf/transform_datatypes.h>
-#include <utility_headers/param.hpp>
 
 #include <boost/thread/locks.hpp>
 #include <boost/thread/mutex.hpp>
@@ -27,14 +27,12 @@ class RotationTransform : public image_reprojection::TransformInterface {
 
    private:
     virtual void onInit() {
-        namespace uhp = utility_headers::param;
-
         const ros::NodeHandle& nh(getNodeHandle());
         const ros::NodeHandle& pnh(getPrivateNodeHandle());
 
         {
             boost::array<double, 3> rpy;
-            uhp::get(pnh, "home_rpy", rpy);
+            param_utilities::get(pnh, "home_rpy", rpy);
             tf::Quaternion qtn;
             qtn.setRPY(rpy[0], rpy[1], rpy[2]);
             const tf::Matrix3x3 mat(qtn);
@@ -77,6 +75,7 @@ class RotationTransform : public image_reprojection::TransformInterface {
     }
 
     /*
+    TODO: implement this
     void setRotation(const ){
 
     }

@@ -6,8 +6,8 @@
 
 #include <image_reprojection/projection_interface.hpp>
 #include <image_reprojection_plugins/transform_helper.hpp>
+#include <param_utilities/param_utilities.hpp>
 #include <ros/console.h>
-#include <utility_headers/param.hpp>
 
 #include <opencv2/calib3d/calib3d.hpp>
 #include <opencv2/core/core.hpp>
@@ -23,20 +23,20 @@ class StandardProjection : public image_reprojection::ProjectionInterface {
 
    private:
     virtual void onInit() {
-        namespace uhp = utility_headers::param;
-
         // get private node handle to access parameters
         const ros::NodeHandle& pnh(getPrivateNodeHandle());
 
         // load parameters
-        uhp::getRequired(pnh, "camera_matrix", camera_matrix_);
-        dist_coeffs_ = uhp::param(pnh, "dist_coeffs", std::vector<double>(4, 0.));
-        const cv::Vec2d fov(uhp::param(pnh, "field_of_view", cv::Vec2d(M_PI / 2., M_PI / 2.)));
+        param_utilities::getRequired(pnh, "camera_matrix", camera_matrix_);
+        dist_coeffs_ = param_utilities::param(pnh, "dist_coeffs", std::vector<double>(4, 0.));
+        const cv::Vec2d fov(
+            param_utilities::param(pnh, "field_of_view", cv::Vec2d(M_PI / 2., M_PI / 2.)));
         frame_.width = std::tan(fov(0) / 2.) * 2.;
         frame_.height = std::tan(fov(1) / 2.) * 2.;
         frame_.x = -frame_.width / 2.;
         frame_.y = -frame_.height / 2.;
-        transform_.set(uhp::param<cv::Matx34f>(pnh, "extrinsic_matrix", cv::Matx34f::eye()));
+        transform_.set(
+            param_utilities::param<cv::Matx34f>(pnh, "extrinsic_matrix", cv::Matx34f::eye()));
 
         ROS_INFO_STREAM(getName() << " has been initialized");
     }

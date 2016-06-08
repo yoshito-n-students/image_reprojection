@@ -11,13 +11,13 @@
 #include <image_transport/publisher.h>
 #include <image_transport/subscriber.h>
 #include <nodelet/nodelet.h>
+#include <param_utilities/param_utilities.hpp>
 #include <pluginlib/class_loader.h>
 #include <ros/console.h>
 #include <ros/node_handle.h>
 #include <ros/rate.h>
 #include <ros/timer.h>
 #include <sensor_msgs/Image.h>
-#include <utility_headers/param.hpp>
 
 #include <boost/thread/locks.hpp>
 #include <boost/thread/mutex.hpp>
@@ -46,8 +46,6 @@ class ImageReprojection : public nodelet::Nodelet {
 
    private:
     virtual void onInit() {
-        namespace uhp = utility_headers::param;
-
         // get node handles
         const ros::NodeHandle &nh(getNodeHandle());
         const ros::NodeHandle &pnh(getPrivateNodeHandle());
@@ -55,19 +53,19 @@ class ImageReprojection : public nodelet::Nodelet {
         // load plugins
         {
             std::string type;
-            uhp::getRequired(pnh, "src_projection/type", type);
+            param_utilities::getRequired(pnh, "src_projection/type", type);
             src_projection_ = projection_loader_.createInstance(type);
             src_projection_->init(pnh.resolveName("src_projection"), ros::M_string(), getMyArgv());
         }
         {
             std::string type;
-            uhp::getRequired(pnh, "dst_projection/type", type);
+            param_utilities::getRequired(pnh, "dst_projection/type", type);
             dst_projection_ = projection_loader_.createInstance(type);
             dst_projection_->init(pnh.resolveName("dst_projection"), ros::M_string(), getMyArgv());
         }
         {
             std::string type;
-            uhp::getRequired(pnh, "transform/type", type);
+            param_utilities::getRequired(pnh, "transform/type", type);
             transform_ = transform_loader_.createInstance(type);
             transform_->init(pnh.resolveName("transform"), ros::M_string(), getMyArgv());
         }
@@ -75,8 +73,10 @@ class ImageReprojection : public nodelet::Nodelet {
         // init mapping between source and destination images
         {
             // load sizes of the initial and final maps (must be initial <= final)
-            const cv::Vec2i size_dst(uhp::param(pnh, "dst_image/size", cv::Vec2i(500, 500)));
-            const cv::Vec2i size_seed(uhp::param(pnh, "map_update/size", cv::Vec2i(250, 250)));
+            const cv::Vec2i size_dst(
+                param_utilities::param(pnh, "dst_image/size", cv::Vec2i(500, 500)));
+            const cv::Vec2i size_seed(
+                param_utilities::param(pnh, "map_update/size", cv::Vec2i(250, 250)));
             CV_Assert(size_dst(0) >= size_seed(0) && size_dst(1) >= size_seed(0));
 
             // init final map whose size is same as the destination image
@@ -98,17 +98,21 @@ class ImageReprojection : public nodelet::Nodelet {
 
             // setup the dstination image publisher
             publisher_ = it.advertise(
-                uhp::param<std::string>(pnh, "dst_image/topic", "reprojected_image"), 1);
-            frame_id_ = uhp::param<std::string>(pnh, "dst_image/fram_id", "reprojected_camera");
+                param_utilities::param<std::string>(pnh, "dst_image/topic", "reprojected_image"),
+                1);
+            frame_id_ =
+                param_utilities::param<std::string>(pnh, "dst_image/fram_id", "reprojected_camera");
 
             // setup the source image subscriber
-            const std::string topic_src(uhp::param<std::string>(pnh, "src_image/topic", "image"));
+            const std::string topic_src(
+                param_utilities::param<std::string>(pnh, "src_image/topic", "image"));
             const std::string transport_src(
-                uhp::param<std::string>(pnh, "src_image/transport", "raw"));
-            if (uhp::param(pnh, "map_update/background", false)) {
+                param_utilities::param<std::string>(pnh, "src_image/transport", "raw"));
+            if (param_utilities::param(pnh, "map_update/background", false)) {
                 // background mode setup
-                timer_ = nh.createTimer(ros::Rate(uhp::param(pnh, "map_update/frequency", 5.)),
-                                        &ImageReprojection::onMapUpdateEvent, this);
+                timer_ = nh.createTimer(
+                    ros::Rate(param_utilities::param(pnh, "map_update/frequency", 5.)),
+                    &ImageReprojection::onMapUpdateEvent, this);
                 subscriber_ = it.subscribe(topic_src, 1, &ImageReprojection::onSrcRecievedFast,
                                            this, transport_src);
             } else {

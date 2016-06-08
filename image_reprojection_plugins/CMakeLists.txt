@@ -8,11 +8,11 @@ find_package(
   catkin REQUIRED COMPONENTS
   cv_extension
   image_reprojection
+  param_utilities
   pluginlib
   roscpp
   std_msgs
   tf
-  utility_headers
   )
 
 ## System dependencies are found with CMake's conventions
@@ -117,7 +117,7 @@ catkin_package(
   LIBRARIES 
   combined_projection_plugin fisheye_projection_plugin no_projection_plugin standard_projection_plugin 
   combined_transform_plugin no_transform_plugin rotation_transform_plugin tf_transform_plugin
-  CATKIN_DEPENDS image_reprojection pluginlib roscpp std_msgs
+  CATKIN_DEPENDS image_reprojection param_utilities pluginlib roscpp std_msgs
 #  DEPENDS system_lib
 )
 

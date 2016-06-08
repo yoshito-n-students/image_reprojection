@@ -44,7 +44,9 @@ class TransformHelper {
 
     void transform(const cv::Mat& src, cv::Mat& dst) const { cv::transform(src, dst, m_); }
 
-    void inverseTransform(const cv::Mat& src, cv::Mat& dst) const { cv::transform(src, dst, m_inv_); }
+    void inverseTransform(const cv::Mat& src, cv::Mat& dst) const {
+        cv::transform(src, dst, m_inv_);
+    }
 
    private:
     cv::Matx34f m_;

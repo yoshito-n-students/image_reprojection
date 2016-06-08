@@ -5,11 +5,11 @@
 
 #include <image_reprojection/transform_interface.hpp>
 #include <image_reprojection_plugins/transform_helper.hpp>
+#include <param_utilities/param_utilities.hpp>
 #include <ros/console.h>
 #include <ros/node_handle.h>
 #include <ros/time.h>
 #include <tf/transform_listener.h>
-#include <utility_headers/param.hpp>
 
 namespace image_reprojection_plugins {
 
@@ -21,12 +21,10 @@ class TFTransform : public image_reprojection::TransformInterface {
 
    private:
     virtual void onInit() {
-        namespace uhp = utility_headers::param;
-
         const ros::NodeHandle& pnh(getPrivateNodeHandle());
 
-        frame_id_src_ = uhp::param<std::string>(pnh, "frame_id_src", "world");
-        frame_id_dst_ = uhp::param<std::string>(pnh, "frame_id_dst", "dst");
+        frame_id_src_ = param_utilities::param<std::string>(pnh, "frame_id_src", "world");
+        frame_id_dst_ = param_utilities::param<std::string>(pnh, "frame_id_dst", "dst");
 
         ROS_INFO_STREAM(getName() << " has been initialized");
     }

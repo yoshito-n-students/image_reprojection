@@ -5,11 +5,11 @@
 #include <vector>
 
 #include <image_reprojection/projection_interface.hpp>
+#include <param_utilities/param_utilities.hpp>
 #include <pluginlib/class_loader.h>
 #include <ros/console.h>
 #include <ros/names.h>
 #include <ros/node_handle.h>
-#include <utility_headers/param.hpp>
 
 #include <opencv2/core/core.hpp>
 
@@ -35,8 +35,6 @@ class CombinedProjection : public image_reprojection::ProjectionInterface {
 
    private:
     virtual void onInit() {
-        namespace uhp = utility_headers::param;
-
         // get private node handle to access parameters
         const ros::NodeHandle& pnh(getPrivateNodeHandle());
 
@@ -44,14 +42,15 @@ class CombinedProjection : public image_reprojection::ProjectionInterface {
         {
             // get the parameter tree for this nodelet
             typedef XmlRpc::XmlRpcValue Xrv;
-            const Xrv params(uhp::param(pnh, "", Xrv()));
+            const Xrv params(param_utilities::param(pnh, "", Xrv()));
             if (params.getType() == Xrv::TypeStruct) {
                 // iterate "~/*"
                 for (Xrv::ValueStruct::const_iterator child = const_cast<Xrv&>(params).begin();
                      child != const_cast<Xrv&>(params).end(); ++child) {
                     // try to get "~/*/type"
                     std::string type;
-                    if (!uhp::get(pnh, ros::names::append(child->first, "type"), type)) {
+                    if (!param_utilities::get(pnh, ros::names::append(child->first, "type"),
+                                              type)) {
                         continue;
                     }
                     // load and init a plugin whose name is the value of "~/*/type"

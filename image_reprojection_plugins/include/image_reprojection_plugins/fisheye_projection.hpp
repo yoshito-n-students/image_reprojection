@@ -7,8 +7,8 @@
 #include <cv_extension/calib3d/calib3d.hpp>
 #include <image_reprojection/projection_interface.hpp>
 #include <image_reprojection_plugins/transform_helper.hpp>
+#include <param_utilities/param_utilities.hpp>
 #include <ros/console.h>
-#include <utility_headers/param.hpp>
 
 #include <opencv2/core/core.hpp>
 
@@ -22,16 +22,15 @@ class FisheyeProjection : public image_reprojection::ProjectionInterface {
 
    private:
     virtual void onInit() {
-        namespace uhp = utility_headers::param;
-
         // get private node handle to access parameters
         const ros::NodeHandle& pnh(getPrivateNodeHandle());
 
         // load parameters
-        uhp::getRequired(pnh, "camera_matrix", camera_matrix_);
-        dist_coeffs_ = uhp::param(pnh, "dist_coeffs", std::vector<double>(4, 0.));
-        min_z_ = std::cos(uhp::param<double>(pnh, "field_of_view", M_PI) / 2.);
-        transform_.set(uhp::param<cv::Matx34f>(pnh, "extrinsic_matrix", cv::Matx34f::eye()));
+        param_utilities::getRequired(pnh, "camera_matrix", camera_matrix_);
+        dist_coeffs_ = param_utilities::param(pnh, "dist_coeffs", std::vector<double>(4, 0.));
+        min_z_ = std::cos(param_utilities::param<double>(pnh, "field_of_view", M_PI) / 2.);
+        transform_.set(
+            param_utilities::param<cv::Matx34f>(pnh, "extrinsic_matrix", cv::Matx34f::eye()));
 
         ROS_INFO_STREAM(getName() << " has been initialized");
     }
