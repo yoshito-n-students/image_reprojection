@@ -8,8 +8,12 @@
 #include <image_reprojection/projection_interface.hpp>
 #include <image_reprojection/transform_interface.hpp>
 #include <image_transport/image_transport.h>
-#include <image_transport/publisher.h>
-#include <image_transport/subscriber.h>
+#include <interprocess_utilities/image_transport_publisher.hpp>
+#include <interprocess_utilities/image_transport_subscriber.hpp>
+#include <interprocess_utilities/interprocess_publisher.hpp>
+#include <interprocess_utilities/interprocess_subscriber.hpp>
+#include <interprocess_utilities/publisher_interface.hpp>
+#include <interprocess_utilities/subscriber_interface.hpp>
 #include <nodelet/nodelet.h>
 #include <param_utilities/param_utilities.hpp>
 #include <pluginlib/class_loader.h>
@@ -28,6 +32,10 @@
 namespace image_reprojection {
 
 class ImageReprojection : public nodelet::Nodelet {
+   private:
+    typedef interprocess_utilities::PublisherInterface<sensor_msgs::Image>::Ptr PublisherPtr;
+    typedef interprocess_utilities::SubscriberInterface<sensor_msgs::Image>::Ptr SubscriberPtr;
+
    public:
     ImageReprojection()
         : projection_loader_("image_reprojection", "image_reprojection::ProjectionInterface"),
@@ -35,7 +43,7 @@ class ImageReprojection : public nodelet::Nodelet {
 
     virtual ~ImageReprojection() {
         // stop using plugins
-        subscriber_.shutdown();
+        subscriber_.reset();
         timer_.stop();
 
         // destroy all plugins before destroying loaders
@@ -46,6 +54,9 @@ class ImageReprojection : public nodelet::Nodelet {
 
    private:
     virtual void onInit() {
+        namespace iu = interprocess_utilities;
+        namespace pu = param_utilities;
+
         // get node handles
         const ros::NodeHandle &nh(getNodeHandle());
         const ros::NodeHandle &pnh(getPrivateNodeHandle());
@@ -53,19 +64,19 @@ class ImageReprojection : public nodelet::Nodelet {
         // load plugins
         {
             std::string type;
-            param_utilities::getRequired(pnh, "src_projection/type", type);
+            pu::getRequired(pnh, "src_projection/type", type);
             src_projection_ = projection_loader_.createInstance(type);
             src_projection_->init(pnh.resolveName("src_projection"), ros::M_string(), getMyArgv());
         }
         {
             std::string type;
-            param_utilities::getRequired(pnh, "dst_projection/type", type);
+            pu::getRequired(pnh, "dst_projection/type", type);
             dst_projection_ = projection_loader_.createInstance(type);
             dst_projection_->init(pnh.resolveName("dst_projection"), ros::M_string(), getMyArgv());
         }
         {
             std::string type;
-            param_utilities::getRequired(pnh, "transform/type", type);
+            pu::getRequired(pnh, "transform/type", type);
             transform_ = transform_loader_.createInstance(type);
             transform_->init(pnh.resolveName("transform"), ros::M_string(), getMyArgv());
         }
@@ -73,10 +84,8 @@ class ImageReprojection : public nodelet::Nodelet {
         // init mapping between source and destination images
         {
             // load sizes of the initial and final maps (must be initial <= final)
-            const cv::Vec2i size_dst(
-                param_utilities::param(pnh, "dst_image/size", cv::Vec2i(500, 500)));
-            const cv::Vec2i size_seed(
-                param_utilities::param(pnh, "map_update/size", cv::Vec2i(250, 250)));
+            const cv::Vec2i size_dst(pu::param(pnh, "dst_image/size", cv::Vec2i(500, 500)));
+            const cv::Vec2i size_seed(pu::param(pnh, "map_update/size", cv::Vec2i(250, 250)));
             CV_Assert(size_dst(0) >= size_seed(0) && size_dst(1) >= size_seed(0));
 
             // init final map whose size is same as the destination image
@@ -92,41 +101,52 @@ class ImageReprojection : public nodelet::Nodelet {
             cv::resize(map_, seed_map_, cv::Size(size_seed(0), size_seed(1)));
         }
 
-        // start image reprojection
+        // setup the destination image publisher
         {
-            image_transport::ImageTransport it(nh);
-
-            // setup the dstination image publisher
-            publisher_ = it.advertise(
-                param_utilities::param<std::string>(pnh, "dst_image/topic", "reprojected_image"),
-                1);
-            frame_id_ =
-                param_utilities::param<std::string>(pnh, "dst_image/fram_id", "reprojected_camera");
-
-            // setup the source image subscriber
-            const std::string topic_src(
-                param_utilities::param<std::string>(pnh, "src_image/topic", "image"));
-            const std::string transport_src(
-                param_utilities::param<std::string>(pnh, "src_image/transport", "raw"));
-            if (param_utilities::param(pnh, "map_update/background", false)) {
-                // background mode setup
-                timer_ = nh.createTimer(
-                    ros::Rate(param_utilities::param(pnh, "map_update/frequency", 5.)),
-                    &ImageReprojection::onMapUpdateEvent, this);
-                subscriber_ = it.subscribe(topic_src, 1, &ImageReprojection::onSrcRecievedFast,
-                                           this, transport_src);
+            const std::string topic(
+                pu::param<std::string>(pnh, "dst_image/topic", "reprojected_image"));
+            const bool use_interprocess(pu::param(pnh, "dst_image/use_interprocess", false));
+            frame_id_ = pu::param<std::string>(pnh, "dst_image/frame_id", "reprojected_camera");
+            if (use_interprocess) {
+                publisher_ = iu::advertiseInterprocess<sensor_msgs::Image>(nh.resolveName(topic));
             } else {
-                // normal mode setup
-                subscriber_ = it.subscribe(topic_src, 1, &ImageReprojection::onSrcRecieved, this,
-                                           transport_src);
+                publisher_ =
+                    iu::advertiseImageTransport(image_transport::ImageTransport(nh), topic);
             }
+            CV_Assert(publisher_);
+        }
+
+        // start the source image subscriber
+        {
+            const bool background(pu::param("map_update/background", false));
+            const std::string topic(pu::param<std::string>(pnh, "src_image/topic", "image"));
+            const bool use_interprocess(pu::param(pnh, "src_image/use_interprocess", false));
+            if (background) {
+                const ros::Rate rate(pu::param(pnh, "map_update/frequency", 5.));
+                timer_ = nh.createTimer(rate, &ImageReprojection::onMapUpdateEvent, this);
+            }
+            if (use_interprocess) {
+                subscriber_ = iu::subscribeInterprocess<sensor_msgs::Image>(
+                    nh.resolveName(topic), background ? &ImageReprojection::onSrcRecievedFast
+                                                      : &ImageReprojection::onSrcRecieved,
+                    this);
+            } else {
+                const std::string transport(
+                    pu::param<std::string>(pnh, "src_image/transport", "raw"));
+                subscriber_ =
+                    iu::subscribeImageTransport(image_transport::ImageTransport(nh), topic,
+                                                background ? &ImageReprojection::onSrcRecievedFast
+                                                           : &ImageReprojection::onSrcRecieved,
+                                                this, transport);
+            }
+            CV_Assert(subscriber_);
         }
     }
 
     void onSrcRecieved(const sensor_msgs::ImageConstPtr &ros_src) {
         try {
             // do nothing if there is no node that subscribes this node
-            if (publisher_.getNumSubscribers() == 0) {
+            if (publisher_->getNumSubscribers() == 0) {
                 return;
             }
 
@@ -150,7 +170,7 @@ class ImageReprojection : public nodelet::Nodelet {
             remap(cv_src->image, cv_dst.image);
 
             // publish the destination image
-            publisher_.publish(cv_dst.toImageMsg());
+            publisher_->publish(*cv_dst.toImageMsg());
         } catch (const std::exception &ex) {
             ROS_ERROR_STREAM("onSrcRecieved: " << ex.what());
         }
@@ -159,7 +179,7 @@ class ImageReprojection : public nodelet::Nodelet {
     void onSrcRecievedFast(const sensor_msgs::ImageConstPtr &ros_src) {
         try {
             // do nothing if there is no node that subscribes this node
-            if (publisher_.getNumSubscribers() == 0) {
+            if (publisher_->getNumSubscribers() == 0) {
                 return;
             }
 
@@ -177,7 +197,7 @@ class ImageReprojection : public nodelet::Nodelet {
             remap(cv_src->image, cv_dst.image);
 
             // publish the destination image
-            publisher_.publish(cv_dst.toImageMsg());
+            publisher_->publish(*cv_dst.toImageMsg());
         } catch (const std::exception &ex) {
             ROS_ERROR_STREAM("onSrcRecievedFast: " << ex.what());
         }
@@ -244,8 +264,8 @@ class ImageReprojection : public nodelet::Nodelet {
     TransformInterfacePtr transform_;
 
     // subscriber for source image and publisher for destination image
-    image_transport::Subscriber subscriber_;
-    image_transport::Publisher publisher_;
+    SubscriberPtr subscriber_;
+    PublisherPtr publisher_;
     ros::Timer timer_;
 
     // parameters
