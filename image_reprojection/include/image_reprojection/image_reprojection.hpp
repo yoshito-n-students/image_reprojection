@@ -118,7 +118,7 @@ class ImageReprojection : public nodelet::Nodelet {
 
         // start the source image subscriber
         {
-            const bool background(pu::param("map_update/background", false));
+            const bool background(pu::param(pnh, "map_update/background", false));
             const std::string topic(pu::param<std::string>(pnh, "src_image/topic", "image"));
             const bool use_interprocess(pu::param(pnh, "src_image/use_interprocess", false));
             if (background) {
