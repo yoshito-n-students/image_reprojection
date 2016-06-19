@@ -89,16 +89,18 @@ class ImageReprojection : public nodelet::Nodelet {
             CV_Assert(size_dst(0) >= size_seed(0) && size_dst(1) >= size_seed(0));
 
             // init final map whose size is same as the destination image
-            map_.create(size_dst(1), size_dst(0), CV_32FC2);
-            for (int x = 0; x < map_.size().width; ++x) {
-                for (int y = 0; y < map_.size().height; ++y) {
-                    map_.at<cv::Point2f>(y, x) = cv::Point2f(x + 0.5, y + 0.5);
+            // (then convert maps to integer for faster remapping)
+            cv::Mat map(size_dst(1), size_dst(0), CV_32FC2);
+            for (int x = 0; x < map.size().width; ++x) {
+                for (int y = 0; y < map.size().height; ++y) {
+                    map.at<cv::Point2f>(y, x) = cv::Point2f(x + 0.5, y + 0.5);
                 }
             }
-            mask_ = cv::Mat::ones(map_.size(), CV_8UC1);
+            cv::convertMaps(map, cv::noArray(), map1_, map2_, CV_16SC2);
+            mask_ = cv::Mat::ones(map.size(), CV_8UC1);
 
             // init the seed map by resizing the final map
-            cv::resize(map_, seed_map_, cv::Size(size_seed(0), size_seed(1)));
+            cv::resize(map, seed_map_, cv::Size(size_seed(0), size_seed(1)));
         }
 
         // setup the destination image publisher
@@ -229,28 +231,23 @@ class ImageReprojection : public nodelet::Nodelet {
         // write updated mapping between source and destination images
         {
             boost::lock_guard<boost::mutex> lock(mutex_);
-            cv::resize(map_src, map_, map_.size());
+            cv::Mat map;
+            cv::resize(map_src, map, map1_.size());
+            cv::convertMaps(map, cv::noArray(), map1_, map2_, CV_16SC2);
             cv::resize(cv::min(mask_dst, mask_src), mask_, mask_.size());
         }
     }
 
     void remap(const cv::Mat &src, cv::Mat &dst) {
-        // read mapping between source and destination images
-        cv::Mat map;
-        cv::Mat mask;
-        {
-            boost::lock_guard<boost::mutex> lock(mutex_);
-            map = map_.clone();
-            mask = mask_.clone();
-        }
+        boost::lock_guard<boost::mutex> lock(mutex_);
 
         // remap the source image to a temp image
         cv::Mat tmp;
-        cv::remap(src, tmp, map, cv::noArray(), cv::INTER_LINEAR);
+        cv::remap(src, tmp, map1_, map2_, cv::INTER_LINEAR);
 
         // copy unmasked pixels of the temp image to the destination image
-        dst = cv::Mat::zeros(map.size(), src.type());
-        tmp.copyTo(dst, mask);
+        dst = cv::Mat::zeros(map1_.size(), src.type());
+        tmp.copyTo(dst, mask_);
     }
 
    private:
@@ -274,7 +271,7 @@ class ImageReprojection : public nodelet::Nodelet {
 
     // mapping between source and destination images
     boost::mutex mutex_;
-    cv::Mat map_;
+    cv::Mat map1_, map2_;
     cv::Mat mask_;
 };
 }
