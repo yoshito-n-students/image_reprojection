@@ -86,7 +86,7 @@ class ImageReprojection : public nodelet::Nodelet {
             // load sizes of the initial and final maps (must be initial <= final)
             const cv::Vec2i size_dst(pu::param(pnh, "dst_image/size", cv::Vec2i(500, 500)));
             const cv::Vec2i size_seed(pu::param(pnh, "map_update/size", cv::Vec2i(250, 250)));
-            CV_Assert(size_dst(0) >= size_seed(0) && size_dst(1) >= size_seed(0));
+            CV_Assert(size_dst(0) >= size_seed(0) && size_dst(1) >= size_seed(1));
 
             // init final map whose size is same as the destination image
             // (then convert maps to integer for faster remapping)
