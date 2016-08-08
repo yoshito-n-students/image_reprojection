@@ -46,6 +46,8 @@ class ImageReprojection : public nodelet::Nodelet {
 
    private:
     virtual void onInit() {
+        namespace pu = param_utilities;
+
         // get node handles
         const ros::NodeHandle &nh(getNodeHandle());
         const ros::NodeHandle &pnh(getPrivateNodeHandle());
@@ -53,19 +55,19 @@ class ImageReprojection : public nodelet::Nodelet {
         // load plugins
         {
             std::string type;
-            param_utilities::getRequired(pnh, "src_projection/type", type);
+            pu::getRequired(pnh, "src_projection/type", type);
             src_projection_ = projection_loader_.createInstance(type);
             src_projection_->init(pnh.resolveName("src_projection"), ros::M_string(), getMyArgv());
         }
         {
             std::string type;
-            param_utilities::getRequired(pnh, "dst_projection/type", type);
+            pu::getRequired(pnh, "dst_projection/type", type);
             dst_projection_ = projection_loader_.createInstance(type);
             dst_projection_->init(pnh.resolveName("dst_projection"), ros::M_string(), getMyArgv());
         }
         {
             std::string type;
-            param_utilities::getRequired(pnh, "transform/type", type);
+            pu::getRequired(pnh, "transform/type", type);
             transform_ = transform_loader_.createInstance(type);
             transform_->init(pnh.resolveName("transform"), ros::M_string(), getMyArgv());
         }
@@ -73,14 +75,12 @@ class ImageReprojection : public nodelet::Nodelet {
         // init mapping between source and destination images
         {
             // load sizes of the initial and final maps (must be initial <= final)
-            const cv::Vec2i size_dst(
-                param_utilities::param(pnh, "dst_image/size", cv::Vec2i(500, 500)));
-            const cv::Vec2i size_seed(
-                param_utilities::param(pnh, "map_update/size", cv::Vec2i(250, 250)));
-            CV_Assert(size_dst(0) >= size_seed(0) && size_dst(1) >= size_seed(0));
+            const cv::Size size_dst(pu::param(pnh, "dst_image/size", cv::Size(500, 500)));
+            const cv::Size size_seed(pu::param(pnh, "map_update/size", cv::Size(250, 250)));
+            CV_Assert(size_dst.width >= size_seed.width && size_dst.height >= size_seed.height);
 
             // init final map whose size is same as the destination image
-            map_.create(size_dst(1), size_dst(0), CV_32FC2);
+            map_.create(size_dst, CV_32FC2);
             for (int x = 0; x < map_.size().width; ++x) {
                 for (int y = 0; y < map_.size().height; ++y) {
                     map_.at<cv::Point2f>(y, x) = cv::Point2f(x + 0.5, y + 0.5);
@@ -89,7 +89,7 @@ class ImageReprojection : public nodelet::Nodelet {
             mask_ = cv::Mat::ones(map_.size(), CV_8UC1);
 
             // init the seed map by resizing the final map
-            cv::resize(map_, seed_map_, cv::Size(size_seed(0), size_seed(1)));
+            cv::resize(map_, seed_map_, size_seed);
         }
 
         // start image reprojection
@@ -98,21 +98,17 @@ class ImageReprojection : public nodelet::Nodelet {
 
             // setup the dstination image publisher
             publisher_ = it.advertise(
-                param_utilities::param<std::string>(pnh, "dst_image/topic", "reprojected_image"),
-                1);
-            frame_id_ =
-                param_utilities::param<std::string>(pnh, "dst_image/fram_id", "reprojected_camera");
+                pu::param<std::string>(pnh, "dst_image/topic", "reprojected_image"), 1);
+            frame_id_ = pu::param<std::string>(pnh, "dst_image/fram_id", "reprojected_camera");
 
             // setup the source image subscriber
-            const std::string topic_src(
-                param_utilities::param<std::string>(pnh, "src_image/topic", "image"));
+            const std::string topic_src(pu::param<std::string>(pnh, "src_image/topic", "image"));
             const std::string transport_src(
-                param_utilities::param<std::string>(pnh, "src_image/transport", "raw"));
-            if (param_utilities::param(pnh, "map_update/background", false)) {
+                pu::param<std::string>(pnh, "src_image/transport", "raw"));
+            if (pu::param(pnh, "map_update/background", false)) {
                 // background mode setup
-                timer_ = nh.createTimer(
-                    ros::Rate(param_utilities::param(pnh, "map_update/frequency", 5.)),
-                    &ImageReprojection::onMapUpdateEvent, this);
+                timer_ = nh.createTimer(ros::Rate(pu::param(pnh, "map_update/frequency", 5.)),
+                                        &ImageReprojection::onMapUpdateEvent, this);
                 subscriber_ = it.subscribe(topic_src, 1, &ImageReprojection::onSrcRecievedFast,
                                            this, transport_src);
             } else {
