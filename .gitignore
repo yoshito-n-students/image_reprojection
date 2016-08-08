@@ -27,3 +27,6 @@
 *.out
 *.app
 
+# VSCode
+.vscode/
+
