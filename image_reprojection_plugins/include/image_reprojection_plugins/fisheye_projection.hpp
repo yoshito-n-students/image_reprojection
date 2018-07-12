@@ -4,11 +4,11 @@
 #include <cmath>
 #include <vector>
 
-#include <cv_extension/calib3d/calib3d.hpp>
+#include <ros/console.h>
 #include <image_reprojection/projection_interface.hpp>
 #include <image_reprojection_plugins/transform_helper.hpp>
+#include <opencv2/calib3d/calib3d.hpp>
 #include <param_utilities/param_utilities.hpp>
-#include <ros/console.h>
 
 #include <opencv2/core/core.hpp>
 
@@ -58,8 +58,10 @@ class FisheyeProjection : public image_reprojection::ProjectionInterface {
     virtual void onReproject(const cv::Mat& src, cv::Mat& dst, cv::Mat& mask) {
         // reproject 2D points in the image coordinate to the camera coordinate
         cv::Mat cam;
+        /*
         cv::fisheye::undistortPointsTo3D(src.reshape(2, src.total()), cam, camera_matrix_,
                                          dist_coeffs_);
+                                         */
         cam = cam.reshape(3, src.size().height);
 
         // transform the points in the camera coordinate into the destination coordinate
@@ -82,6 +84,6 @@ class FisheyeProjection : public image_reprojection::ProjectionInterface {
     double min_z_;
     TransformHelper transform_;
 };
-}
+}  // namespace image_reprojection_plugins
 
 #endif /* IMAGE_REPROJECTION_PLUGINS_FISHEYE_PROJECTION_HPP */
