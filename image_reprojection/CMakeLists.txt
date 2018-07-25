@@ -8,7 +8,6 @@ find_package(
   catkin REQUIRED COMPONENTS
   cv_bridge
   image_transport
-  interprocess_utilities
   nodelet
   param_utilities
   pluginlib
@@ -108,7 +107,7 @@ find_package(
 catkin_package(
   INCLUDE_DIRS include
 #  LIBRARIES image_reprojection
-CATKIN_DEPENDS cv_bridge image_transport interprocess_utilities nodelet param_utilities pluginlib roscpp sensor_msgs
+CATKIN_DEPENDS cv_bridge image_transport nodelet param_utilities pluginlib roscpp sensor_msgs
 #  DEPENDS system_lib
 )
 
