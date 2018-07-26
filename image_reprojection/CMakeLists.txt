@@ -9,10 +9,11 @@ find_package(
   cv_bridge
   image_transport
   nodelet
-  param_utilities
   pluginlib
   roscpp
   sensor_msgs
+  tf
+  topic_tools
   )
 
 ## System dependencies are found with CMake's conventions
@@ -107,7 +108,15 @@ find_package(
 catkin_package(
   INCLUDE_DIRS include
 #  LIBRARIES image_reprojection
-CATKIN_DEPENDS cv_bridge image_transport nodelet param_utilities pluginlib roscpp sensor_msgs
+  CATKIN_DEPENDS 
+  cv_bridge 
+  image_transport 
+  nodelet 
+  pluginlib 
+  roscpp 
+  sensor_msgs 
+  tf 
+  topic_tools
 #  DEPENDS system_lib
 )
 
