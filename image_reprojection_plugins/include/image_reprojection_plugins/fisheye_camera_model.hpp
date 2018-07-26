@@ -5,8 +5,6 @@
 #include <vector>
 
 #include <image_reprojection/camera_model.hpp>
-#include <opencv2/calib3d/calib3d.hpp>
-#include <param_utilities/param_utilities.hpp>
 #include <ros/console.h>
 #include <sensor_msgs/CameraInfo.h>
 

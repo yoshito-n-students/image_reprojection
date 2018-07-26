@@ -9,7 +9,6 @@ find_package(
   cv_bridge
   image_reprojection
   message_generation
-  param_utilities
   pluginlib
   roscpp
   shape_msgs
@@ -124,7 +123,6 @@ catkin_package(
   cv_bridge 
   image_reprojection 
   message_runtime
-  param_utilities 
   pluginlib 
   roscpp 
   shape_msgs
