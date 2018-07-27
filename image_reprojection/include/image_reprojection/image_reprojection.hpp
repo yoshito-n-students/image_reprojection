@@ -5,12 +5,14 @@
 #include <string>
 #include <vector>
 
+#include <camera_info_manager/camera_info_manager.h>
 #include <cv_bridge/cv_bridge.h>
 #include <image_reprojection/camera_model.hpp>
 #include <image_reprojection/surface_model.hpp>
 #include <image_transport/camera_publisher.h>
 #include <image_transport/camera_subscriber.h>
 #include <image_transport/image_transport.h>
+#include <image_transport/transport_hints.h>
 #include <nodelet/nodelet.h>
 #include <pluginlib/class_loader.h>
 #include <ros/console.h>
@@ -58,23 +60,30 @@ private:
     // load plugins
     {
       std::string type;
-      CV_Assert(pnh.getParam("src_camera_model/type", type));
+      CV_Assert(pnh.getParam("src_camera0/model", type));
       src_camera_model_ = camera_model_loader_.createInstance(type);
-      src_camera_model_->init(pnh.resolveName("src_camera_model"), ros::M_string(), getMyArgv());
+      src_camera_model_->init(pnh.resolveName("src_camera0"), ros::M_string(), getMyArgv());
     }
     {
       std::string type;
-      CV_Assert(pnh.getParam("dst_camera_model/type", type));
+      CV_Assert(pnh.getParam("dst_camera/model", type));
       dst_camera_model_ = camera_model_loader_.createInstance(type);
-      dst_camera_model_->init(pnh.resolveName("dst_camera_model"), ros::M_string(), getMyArgv());
+      dst_camera_model_->init(pnh.resolveName("dst_camera"), ros::M_string(), getMyArgv());
+      dst_camera_info_manager_.reset(new camera_info_manager::CameraInfoManager(
+          nh, pnh.param< std::string >("dst_camera/name", "dst_camera"),
+          pnh.param< std::string >("dst_camera/info_url", "")));
     }
     {
       std::string type;
-      CV_Assert(pnh.getParam("surface_model/type", type));
+      CV_Assert(pnh.getParam("surface/model", type));
       surface_model_ = surface_model_loader_.createInstance(type);
-      surface_model_->init(pnh.resolveName("surface_model"), ros::M_string(), getMyArgv());
+      surface_model_->init(pnh.resolveName("surface"), ros::M_string(), getMyArgv());
     }
 
+    // TODO: set dst_image/size from dst_camera_info_manager_->getCameraInfo().
+    //       also, use map_update/binning_{x,y} instread of map_update/size
+    //       because dst_image/size can dynamically change.
+    //       then, initial map should be generated at beggining of updateMap()
     // init mapping between source and destination images
     {
       // load sizes of the initial and final maps (must be initial <= final)
@@ -100,8 +109,7 @@ private:
     CV_Assert(tf_listener_);
 
     // setup the destination image publisher
-    // TODO: load camera info using camera_info_parser pkg
-    dst_camera_publisher_ = it.advertiseCamera("virtual_camera", 1, true);
+    dst_camera_publisher_ = it.advertiseCamera("dst_camera", 1, true);
 
     //
     surface_subscriber_ = nh.subscribe("surface", 1, &ImageReprojection::onSurfaceRecieved, this);
@@ -114,15 +122,22 @@ private:
         timer_ = nh.createTimer(rate, &ImageReprojection::onMapUpdateEvent, this);
       }
       // TODO: launch multiple subscribers
-      src_camera_subscriber_ = it.subscribeCamera("camera0", 1,
-                                                  background ? &ImageReprojection::onSrcRecievedFast
-                                                             : &ImageReprojection::onSrcRecieved,
-                                                  this);
+      const image_transport::TransportHints default_hints;
+      src_camera_subscriber_ = it.subscribeCamera(
+          "src_camera0", 1,
+          background ? &ImageReprojection::onSrcRecievedFast : &ImageReprojection::onSrcRecieved,
+          this,
+          image_transport::TransportHints(default_hints.getTransport(), default_hints.getRosHints(),
+                                          pnh));
     }
   }
 
   void onSurfaceRecieved(const topic_tools::ShapeShifter::ConstPtr &surface) {
-    surface_model_->update(*surface);
+    try {
+      surface_model_->update(*surface);
+    } catch (const std::exception &ex) {
+      ROS_ERROR_STREAM("onSurfaceRecieved: " << ex.what());
+    }
   }
 
   void onSrcRecieved(const sensor_msgs::ImageConstPtr &ros_src,
@@ -218,7 +233,7 @@ private:
       tf_listener_->lookupTransform(dst_camera_info->header.frame_id, surface_model_->getFrameId(),
                                     ros::Time(0), dst2surface);
       transform(ray_origin, dst2surface);
-      transform(ray_directions, dst2surface);
+      transform(ray_directions, dst2surface, updated_mask);
     }
 
     // calculate mapping to source object coord
@@ -232,7 +247,7 @@ private:
       tf::StampedTransform surface2src;
       tf_listener_->lookupTransform(surface_model_->getFrameId(), src_camera_info->header.frame_id,
                                     ros::Time(0), surface2src);
-      transform(intersections, surface2src);
+      transform(intersections, surface2src, updated_mask);
     }
 
     // calculate mapping to source image coord that is the final map
@@ -271,17 +286,21 @@ private:
   }
 
   static void transform(cv::Vec3f &cv_vec, const tf::Transform &tf_transform) {
-    const tf::Vector3 tf_vec = tf_transform(tf::Vector3(cv_vec[0], cv_vec[1], cv_vec[2]));
+    const tf::Vector3 tf_vec(tf_transform(tf::Vector3(cv_vec[0], cv_vec[1], cv_vec[2])));
     cv_vec[0] = tf_vec[0];
     cv_vec[1] = tf_vec[1];
     cv_vec[2] = tf_vec[2];
   }
 
-  static void transform(cv::Mat &cv_mat, const tf::Transform &tf_transform) {
+  static void transform(cv::Mat &cv_mat, const tf::Transform &tf_transform, const cv::Mat &mask) {
     CV_Assert(cv_mat.type() == CV_32FC3);
+    CV_Assert(mask.type() == CV_8UC1);
+    CV_Assert(cv_mat.size() == mask.size());
     for (int x = 0; x < cv_mat.size().width; ++x) {
       for (int y = 0; y < cv_mat.size().height; ++y) {
-        transform(cv_mat.at< cv::Vec3f >(x, y), tf_transform);
+        if (mask.at< unsigned char >(y, x) != 0) {
+          transform(cv_mat.at< cv::Vec3f >(y, x), tf_transform);
+        }
       }
     }
   }
@@ -294,6 +313,7 @@ private:
   // models
   CameraModelPtr src_camera_model_;
   CameraModelPtr dst_camera_model_;
+  boost::scoped_ptr< camera_info_manager::CameraInfoManager > dst_camera_info_manager_;
   SurfaceModelPtr surface_model_;
 
   // subscriber for source image and publisher for destination image
