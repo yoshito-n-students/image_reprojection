@@ -20,6 +20,7 @@
 #include <sensor_msgs/CameraInfo.h>
 #include <sensor_msgs/Image.h>
 #include <tf/transform_listener.h>
+#include <topic_tools/shape_shifter.h>
 
 #include <boost/scoped_ptr.hpp>
 #include <boost/thread/locks.hpp>
@@ -38,7 +39,7 @@ public:
 
   virtual ~ImageReprojection() {
     // stop using plugins
-    subscriber_.shutdown();
+    src_camera_subscriber_.shutdown();
     timer_.stop();
 
     // destroy all plugins before destroying loaders
@@ -100,8 +101,10 @@ private:
 
     // setup the destination image publisher
     // TODO: load camera info using camera_info_parser pkg
-    publisher_ = it.advertiseCamera("virtual_camera", 1, true);
-    CV_Assert(publisher_);
+    dst_camera_publisher_ = it.advertiseCamera("virtual_camera", 1, true);
+
+    //
+    surface_subscriber_ = nh.subscribe("surface", 1, &ImageReprojection::onSurfaceRecieved, this);
 
     // start the source image subscriber
     {
@@ -111,19 +114,22 @@ private:
         timer_ = nh.createTimer(rate, &ImageReprojection::onMapUpdateEvent, this);
       }
       // TODO: launch multiple subscribers
-      subscriber_ = it.subscribeCamera("camera0", 1,
-                                       background ? &ImageReprojection::onSrcRecievedFast
-                                                  : &ImageReprojection::onSrcRecieved,
-                                       this);
-      CV_Assert(subscriber_);
+      src_camera_subscriber_ = it.subscribeCamera("camera0", 1,
+                                                  background ? &ImageReprojection::onSrcRecievedFast
+                                                             : &ImageReprojection::onSrcRecieved,
+                                                  this);
     }
+  }
+
+  void onSurfaceRecieved(const topic_tools::ShapeShifter::ConstPtr &surface) {
+    surface_model_->update(*surface);
   }
 
   void onSrcRecieved(const sensor_msgs::ImageConstPtr &ros_src,
                      const sensor_msgs::CameraInfoConstPtr &src_camera_info) {
     try {
       // do nothing if there is no node that subscribes this node
-      if (publisher_.getNumSubscribers() == 0) {
+      if (dst_camera_publisher_.getNumSubscribers() == 0) {
         return;
       }
 
@@ -151,7 +157,7 @@ private:
       remap(cv_src->image, cv_dst.image);
 
       // publish the destination image
-      publisher_.publish(cv_dst.toImageMsg(), dst_camera_info);
+      dst_camera_publisher_.publish(cv_dst.toImageMsg(), dst_camera_info);
     } catch (const std::exception &ex) {
       ROS_ERROR_STREAM("onSrcRecieved: " << ex.what());
     }
@@ -161,7 +167,7 @@ private:
                          const sensor_msgs::CameraInfoConstPtr &src_camera_info) {
     try {
       // do nothing if there is no node that subscribes this node
-      if (publisher_.getNumSubscribers() == 0) {
+      if (dst_camera_publisher_.getNumSubscribers() == 0) {
         return;
       }
 
@@ -183,7 +189,7 @@ private:
       remap(cv_src->image, cv_dst.image);
 
       // publish the destination image
-      publisher_.publish(cv_dst.toImageMsg(), dst_camera_info);
+      dst_camera_publisher_.publish(cv_dst.toImageMsg(), dst_camera_info);
     } catch (const std::exception &ex) {
       ROS_ERROR_STREAM("onSrcRecievedFast: " << ex.what());
     }
@@ -291,8 +297,9 @@ private:
   SurfaceModelPtr surface_model_;
 
   // subscriber for source image and publisher for destination image
-  image_transport::CameraSubscriber subscriber_;
-  image_transport::CameraPublisher publisher_;
+  image_transport::CameraSubscriber src_camera_subscriber_;
+  ros::Subscriber surface_subscriber_;
+  image_transport::CameraPublisher dst_camera_publisher_;
   ros::Timer timer_;
 
   // transformer
