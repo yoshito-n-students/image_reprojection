@@ -1,0 +1,8 @@
+<library path="lib/libmesh_surface_model_plugin">
+  <class type="image_reprojection_plugins::MeshSurfaceModel"
+	 base_class_type="image_reprojection::SurfaceModel">
+    <description>
+      Plugin calculating intersection with mesh triangles
+    </description>
+  </class>
+</library>

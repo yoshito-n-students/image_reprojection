@@ -1,0 +1,8 @@
+<library path="lib/libpinhole_camera_model_plugin">
+  <class type="image_reprojection_plugins::PinholeCameraModel"
+      	 base_class_type="image_reprojection::CameraModel">
+    <description>
+      Plugin calculating pinhole camera projection
+    </description>
+  </class>
+</library>

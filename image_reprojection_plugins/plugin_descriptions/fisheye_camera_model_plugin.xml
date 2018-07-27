@@ -1,0 +1,8 @@
+<library path="lib/libfisheye_camera_model_plugin">
+  <class type="image_reprojection_plugins::FisheyeCameraModel" 
+         base_class_type="image_reprojection::CameraModel">
+    <description>
+      Plugin calculating fisheye camera projection
+    </description>
+  </class>
+</library>
