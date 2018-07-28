@@ -5,8 +5,6 @@
 #include <vector>
 
 #include <image_reprojection/camera_model.hpp>
-#include <ros/console.h>
-#include <ros/node_handle.h>
 #include <sensor_msgs/CameraInfo.h>
 
 #include <opencv2/calib3d/calib3d.hpp>
@@ -22,8 +20,6 @@ public:
   virtual ~PinholeCameraModel() {}
 
 private:
-  virtual void onInit() { ROS_INFO_STREAM(getName() << " has been initialized"); }
-
   virtual void onProject3dToPixel(const cv::Mat &src, cv::Mat &dst, cv::Mat &mask) const {
     // project 3D points in the camera coordinate into the 2D image coordinate
     cv::projectPoints(src.reshape(3, src.total()), cv::Vec3d::all(0.), cv::Vec3d::all(0.),

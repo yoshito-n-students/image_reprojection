@@ -3,7 +3,6 @@
 
 #include <string>
 
-#include <nodelet/nodelet.h>
 #include <topic_tools/shape_shifter.h>
 
 #include <boost/shared_ptr.hpp>
@@ -12,7 +11,7 @@
 
 namespace image_reprojection {
 
-class SurfaceModel : public nodelet::Nodelet {
+class SurfaceModel {
 public:
   SurfaceModel() {}
 
@@ -68,7 +67,6 @@ public:
 private:
   /*
     following vitual functions must be implemented in a child class
-    as well as void onInit() from nodelet::Nodelet
   */
   virtual void onIntersection(const cv::Vec3f &src_origin, const cv::Mat &src_direction,
                               cv::Mat &dst, cv::Mat &mask) const = 0;

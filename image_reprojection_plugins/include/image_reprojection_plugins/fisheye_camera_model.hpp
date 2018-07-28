@@ -5,7 +5,6 @@
 #include <vector>
 
 #include <image_reprojection/camera_model.hpp>
-#include <ros/console.h>
 #include <sensor_msgs/CameraInfo.h>
 
 #include <opencv2/calib3d/calib3d.hpp>
@@ -20,8 +19,6 @@ public:
   virtual ~FisheyeCameraModel() {}
 
 private:
-  virtual void onInit() { ROS_INFO_STREAM(getName() << " has been initialized"); }
-
   virtual void onProject3dToPixel(const cv::Mat &src, cv::Mat &dst, cv::Mat &mask) const {
     // project 3D points in the camera coordinate into the 2D image coordinate
     cv::fisheye::projectPoints(src.reshape(3, src.total()), dst, cv::Vec3d::all(0.),

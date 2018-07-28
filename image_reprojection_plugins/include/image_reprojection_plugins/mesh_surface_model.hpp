@@ -20,25 +20,26 @@ public:
 
   virtual ~MeshSurfaceModel() {}
 
-private:
-  virtual void onInit() {}
-
-  virtual void update(const topic_tools::ShapeShifter &surface) {
-    const MeshStampedConstPtr mesh(surface.instantiate< MeshStamped >());
-    CV_Assert(mesh);
-
-    frame_id_ = mesh->header.frame_id;
+  void update(const MeshStamped &mesh) {
+    frame_id_ = mesh.header.frame_id;
 
     vertices_.clear();
-    BOOST_FOREACH (const geometry_msgs::Point &v, mesh->mesh.vertices) {
+    BOOST_FOREACH (const geometry_msgs::Point &v, mesh.mesh.vertices) {
       vertices_.push_back(cv::Vec3f(v.x, v.y, v.z));
     }
 
     triangles_.clear();
-    BOOST_FOREACH (const shape_msgs::MeshTriangle &t, mesh->mesh.triangles) {
+    BOOST_FOREACH (const shape_msgs::MeshTriangle &t, mesh.mesh.triangles) {
       triangles_.push_back(
           cv::Vec3i(t.vertex_indices[0], t.vertex_indices[1], t.vertex_indices[2]));
     }
+  }
+
+private:
+  virtual void update(const topic_tools::ShapeShifter &surface) {
+    const MeshStampedConstPtr mesh(surface.instantiate< MeshStamped >());
+    CV_Assert(mesh);
+    update(*mesh);
   }
 
   virtual std::string getFrameId() const { return frame_id_; }
@@ -82,7 +83,7 @@ private:
 
   bool rayTriangleIntersection(const cv::Vec3f &src_origin, const cv::Vec3f &src_direction,
                                const cv::Vec3i &triangle, cv::Vec3f &dst) const {
-    // primitive vectors
+    // primitive vectors with respect to 0th vertex of triangle
     const cv::Vec3f r(src_origin - vertices_[triangle[0]]);              // position of ray origin
     const cv::Vec3f e1(vertices_[triangle[1]] - vertices_[triangle[0]]); // 1st edge of triangle
     const cv::Vec3f e2(vertices_[triangle[2]] - vertices_[triangle[0]]); // 2nd edge of triangle
@@ -101,9 +102,9 @@ private:
     const double ddn_sign(ddn > 0. ? 1. : -1.);
     const double ddn_norm(ddn > 0. ? ddn : -ddn);
 
-    // t = dot(r, n) / dot(d, n)
+    // t = -dot(r, n) / dot(d, n)
     const double srdn(ddn_sign * r.dot(n));
-    if (srdn < 0.) { // means t < 0
+    if (srdn > 0.) { // means t < 0
       return false;
     }
 
@@ -123,7 +124,8 @@ private:
       return false;
     }
 
-    dst = r + srdn * src_direction / ddn_norm;
+    // intersection point with respect to mesh coordinate frame
+    dst = src_origin - srdn * src_direction / ddn_norm;
     return true;
   }
 

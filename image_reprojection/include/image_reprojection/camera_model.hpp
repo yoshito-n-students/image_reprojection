@@ -1,7 +1,6 @@
 #ifndef IMAGE_REPROJECTION_CAMERA_MODEL_HPP
 #define IMAGE_REPROJECTION_CAMERA_MODEL_HPP
 
-#include <nodelet/nodelet.h>
 #include <sensor_msgs/CameraInfo.h>
 
 #include <boost/shared_ptr.hpp>
@@ -10,7 +9,7 @@
 
 namespace image_reprojection {
 
-class CameraModel : public nodelet::Nodelet {
+class CameraModel {
 public:
   CameraModel() {}
 
@@ -101,7 +100,6 @@ public:
 private:
   /*
     following vitual functions must be implemented in a child class
-    as well as void onInit() from nodelet::Nodelet
   */
   virtual void onProject3dToPixel(const cv::Mat &src, cv::Mat &dst, cv::Mat &mask) const = 0;
 
