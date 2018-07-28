@@ -228,10 +228,17 @@ target_link_libraries(
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_image_reprojection_plugins.cpp)
-# if(TARGET ${PROJECT_NAME}-test)
-#   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
-# endif()
+catkin_add_gtest(
+  test_mesh_surface_model 
+  test/test_mesh_surface_model.cpp
+)
+if(TARGET test_mesh_surface_model)
+  target_link_libraries(
+    test_mesh_surface_model
+    ${catkin_LIBRARIES}
+    ${OpenCV_LIBRARIES}
+  )
+endif()
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
