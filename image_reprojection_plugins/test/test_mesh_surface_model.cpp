@@ -40,11 +40,15 @@ cv::Vec3f triangleVertex(const irp::MeshStamped &mesh, const int triangle_id, co
 }
 
 // generate intersections to 0th triangle of the given mesh
-void randomIntersection(const cv::Size &dsize, const irp::MeshStamped &mesh, cv::Mat &ray_direction,
-                        cv::Mat &intersection, cv::Mat &mask) {
+void randomIntersection(const cv::Size &dsize, const irp::MeshStamped &mesh, cv::Vec3f &ray_origin,
+                        cv::Mat &ray_direction, cv::Mat &intersection, cv::Mat &mask) {
   ray_direction.create(dsize, CV_32FC3);
   intersection.create(dsize, CV_32FC3);
   mask.create(dsize, CV_8UC1);
+
+  ray_origin[0] = g_rng.uniform(-1., 1.);
+  ray_origin[1] = g_rng.uniform(-1., 1.);
+  ray_origin[2] = g_rng.uniform(-1., 1.);
 
   const cv::Vec3f v0(triangleVertex(mesh, 0, 0));
   const cv::Vec3f e1(triangleVertex(mesh, 0, 1) - v0);
@@ -57,7 +61,7 @@ void randomIntersection(const cv::Size &dsize, const irp::MeshStamped &mesh, cv:
       intersection.at< cv::Vec3f >(y, x) = p;
       //
       const double d_scale(g_rng.uniform(-1., 2.));
-      ray_direction.at< cv::Vec3f >(y, x) = d_scale * p;
+      ray_direction.at< cv::Vec3f >(y, x) = d_scale * (p - ray_origin);
       //
       mask.at< unsigned char >(y, x) = (b1 >= 0 && b2 >= 0 && b1 + b2 <= 1 && d_scale >= 0) ? 1 : 0;
     }
@@ -72,11 +76,11 @@ TEST(Intersection, random10000) {
 
   // generate truth data at random
   const cv::Size size(100, 100);
+  cv::Vec3f ray_origin;
   cv::Mat ray_direction, true_intersection, true_mask;
-  randomIntersection(size, mesh, ray_direction, true_intersection, true_mask);
+  randomIntersection(size, mesh, ray_origin, ray_direction, true_intersection, true_mask);
 
   // calculate intersections using tested model
-  cv::Vec3f ray_origin(0., 0., 0.);
   cv::Mat intersection, mask(cv::Mat::ones(ray_direction.size(), CV_8UC1));
   model.intersection(ray_origin, ray_direction, intersection, mask);
 
