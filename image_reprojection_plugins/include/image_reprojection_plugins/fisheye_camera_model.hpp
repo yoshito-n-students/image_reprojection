@@ -10,6 +10,8 @@
 #include <opencv2/calib3d/calib3d.hpp>
 #include <opencv2/core/core.hpp>
 
+#include <boost/make_shared.hpp>
+
 namespace image_reprojection_plugins {
 
 class FisheyeCameraModel : public image_reprojection::CameraModel {
@@ -66,14 +68,58 @@ private:
   virtual void fromCameraInfo(const sensor_msgs::CameraInfo &camera_info) {
     // TODO: implement!!
     // Note: load **FOV** as well as cam mat and dist coeffs
+
+    // assert distortion type and/or matrix values, num of distorion params here?
+
+    // copy entire camera info to return it via toCameraInfo()
+    camera_info_ = camera_info;
+
+    // copy full resolution camera matrix
+    std::copy(camera_info.K.begin(), camera_info.K.end(), camera_matrix_.val);
+
+    // adust offset of principal points.
+    // (this should be performed against full camera matrix
+    // because offsets are written in full resolution)
+    if (camera_info.roi.x_offset != 0) {
+      camera_matrix_(0, 2) -= camera_info.roi.x_offset;
+    }
+    if (camera_info.roi.y_offset != 0) {
+      camera_matrix_(1, 2) -= camera_info.roi.y_offset;
+    }
+
+    // adust image scaling
+    if (camera_info.binning_x != 0 && camera_info.binning_x != 1) {
+      camera_matrix_(0, 0) /= camera_info.binning_x;
+      camera_matrix_(0, 1) /= camera_info.binning_x;
+      camera_matrix_(0, 2) /= camera_info.binning_x;
+    }
+    if (camera_info.binning_y != 0 && camera_info.binning_y != 1) {
+      camera_matrix_(1, 0) /= camera_info.binning_y;
+      camera_matrix_(1, 1) /= camera_info.binning_y;
+      camera_matrix_(1, 2) /= camera_info.binning_y;
+    }
+
+    // copy distortion coefficients which are independent from image resolution
+    // (do not copy the last element of camera_info.D because it is field of view)
+    dist_coeffs_.assign(camera_info.D.begin(), camera_info.D.end() - 1);
+
+    // copy image size info
+    frame_.x = camera_info.roi.x_offset;
+    frame_.y = camera_info.roi.y_offset;
+    frame_.width = (camera_info.roi.width == 0 ? camera_info.width : camera_info.roi.width);
+    frame_.height = (camera_info.roi.height == 0 ? camera_info.height : camera_info.roi.height);
+
+    // copy field of view
+    fov_ = camera_info.D.back();
   }
 
   virtual sensor_msgs::CameraInfoPtr toCameraInfo() const {
-    // TODO: implement!!
+    return boost::make_shared< sensor_msgs::CameraInfo >(camera_info_);
   }
 
 private:
   // parameters
+  sensor_msgs::CameraInfo camera_info_;
   cv::Matx33d camera_matrix_;
   std::vector< double > dist_coeffs_;
   cv::Rect_< float > frame_;
