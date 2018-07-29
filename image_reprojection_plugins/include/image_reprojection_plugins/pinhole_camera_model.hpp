@@ -1,7 +1,7 @@
 #ifndef IMAGE_REPROJECTION_PLUGINS_PINHOLE_CAMERA_MODEL_HPP
 #define IMAGE_REPROJECTION_PLUGINS_PINHOLE_CAMERA_MODEL_HPP
 
-#include <cmath>
+#include <algorithm>
 #include <vector>
 
 #include <image_reprojection/camera_model.hpp>
