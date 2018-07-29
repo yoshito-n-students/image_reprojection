@@ -66,10 +66,12 @@ private:
   }
 
   virtual void fromCameraInfo(const sensor_msgs::CameraInfo &camera_info) {
-    // TODO: implement!!
-    // Note: load **FOV** as well as cam mat and dist coeffs
-
-    // assert distortion type and/or matrix values, num of distorion params here?
+    // assert distortion type and number of distortion parameters
+    CV_Assert(camera_info.distortion_model == "fisheye");
+    CV_Assert(camera_info.D.size() == 0 /* no distortion & fov */ ||
+              camera_info.D.size() == 1 /* fov only */ ||
+              camera_info.D.size() == 4 /* distortion only */ ||
+              camera_info.D.size() == 5 /* distortion & fov */);
 
     // copy entire camera info to return it via toCameraInfo()
     camera_info_ = camera_info;
@@ -101,16 +103,35 @@ private:
 
     // copy distortion coefficients which are independent from image resolution
     // (do not copy the last element of camera_info.D because it is field of view)
-    dist_coeffs_.assign(camera_info.D.begin(), camera_info.D.end() - 1);
+    switch (camera_info.D.size()) {
+    case 0: /* no distortion & fov */
+      dist_coeffs_.resize(4, 0.);
+      fov_ = M_PI;
+      break;
+    case 1: /* fov only */
+      dist_coeffs_.resize(4, 0.);
+      fov_ = camera_info.D[0];
+      break;
+    case 4: /* distortion only */
+      dist_coeffs_ = camera_info.D;
+      fov_ = M_PI;
+      break;
+    case 5: /* distortion & fov */
+      dist_coeffs_.assign(camera_info.D.begin(), camera_info.D.begin() + 4);
+      fov_ = camera_info.D[4];
+      break;
+    default: {
+      static const bool SHOULD_NOT_REACH_HERE_BUG(false);
+      CV_Assert(SHOULD_NOT_REACH_HERE_BUG);
+      break;
+    }
+    }
 
     // copy image size info
     frame_.x = camera_info.roi.x_offset;
     frame_.y = camera_info.roi.y_offset;
     frame_.width = (camera_info.roi.width == 0 ? camera_info.width : camera_info.roi.width);
     frame_.height = (camera_info.roi.height == 0 ? camera_info.height : camera_info.roi.height);
-
-    // copy field of view
-    fov_ = camera_info.D.back();
   }
 
   virtual sensor_msgs::CameraInfoPtr toCameraInfo() const {
@@ -122,8 +143,8 @@ private:
   sensor_msgs::CameraInfo camera_info_;
   cv::Matx33d camera_matrix_;
   std::vector< double > dist_coeffs_;
-  cv::Rect_< float > frame_;
   double fov_;
+  cv::Rect_< float > frame_;
 };
 
 } // namespace image_reprojection_plugins
