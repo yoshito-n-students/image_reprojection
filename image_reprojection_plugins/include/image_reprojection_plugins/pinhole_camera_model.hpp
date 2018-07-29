@@ -6,6 +6,7 @@
 
 #include <image_reprojection/camera_model.hpp>
 #include <sensor_msgs/CameraInfo.h>
+#include <sensor_msgs/distortion_models.h>
 
 #include <opencv2/calib3d/calib3d.hpp>
 #include <opencv2/core/core.hpp>
@@ -70,7 +71,14 @@ private:
   }
 
   virtual void fromCameraInfo(const sensor_msgs::CameraInfo &camera_info) {
-    // assert distortion type and/or matrix values, num of distorion params here?
+    // assert distortion type and number of distortion parameters
+    CV_Assert(camera_info.distortion_model == sensor_msgs::distortion_models::PLUMB_BOB ||
+              camera_info.distortion_model == sensor_msgs::distortion_models::RATIONAL_POLYNOMIAL);
+    CV_Assert(camera_info.D.size() == 0 || camera_info.D.size() == 4 || camera_info.D.size() == 5 ||
+              camera_info.D.size() == 8 || camera_info.D.size() == 12 ||
+              camera_info.D.size() == 14);
+    // official reference of opencv says size of D should be 4, 5, or 8,
+    // but source on github looks allow 0, 12, and 14, too.
 
     // copy entire camera info to return it via toCameraInfo()
     camera_info_ = camera_info;
