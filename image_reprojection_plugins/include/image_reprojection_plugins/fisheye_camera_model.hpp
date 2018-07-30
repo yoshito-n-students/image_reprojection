@@ -2,6 +2,7 @@
 #define IMAGE_REPROJECTION_PLUGINS_FISHEYE_CAMERA_MODEL_HPP
 
 #include <cmath>
+#include <limits>
 #include <vector>
 
 #include <image_reprojection/camera_model.hpp>
@@ -69,14 +70,24 @@ private:
     const double theta_d(cv::sqrt(distorted.x * distorted.x + distorted.y * distorted.y));
     double theta(theta_d);
     if (theta_d > 1e-8) {
-      // compensate distortion iteratively
+      // newton's method:
+      // to find theta giving f(theta) = 0, where
+      //   f(theta) = theta * (1 + k0*theta^2 + ... + k3*theta^8) - theta_d
+      // update theta iteratively by
+      //   theta <- theta - theta_fix
+      //   theta_fix = f(theta) / f'(theta)
       for (int i = 0; i < 10; ++i) {
-        const double theta2(theta * theta);
-        const double theta4(theta2 * theta2);
-        const double theta6(theta4 * theta2);
-        const double theta8(theta6 * theta2);
-        theta = theta_d / (1 + dist_coeffs_[0] * theta2 + dist_coeffs_[1] * theta4 +
-                           dist_coeffs_[2] * theta6 + dist_coeffs_[3] * theta8);
+        const double theta2(theta * theta), theta4(theta2 * theta2), theta6(theta4 * theta2),
+            theta8(theta6 * theta2);
+        const double k0_theta2(dist_coeffs_[0] * theta2), k1_theta4(dist_coeffs_[1] * theta4),
+            k2_theta6(dist_coeffs_[2] * theta6), k3_theta8(dist_coeffs_[3] * theta8);
+        const double theta_fix(
+            (theta * (1 + k0_theta2 + k1_theta4 + k2_theta6 + k3_theta8) - theta_d) /
+            (1 + 3 * k0_theta2 + 5 * k1_theta4 + 7 * k2_theta6 + 9 * k3_theta8));
+        theta -= theta_fix;
+        if (std::fabs(theta_fix) < std::numeric_limits< double >::epsilon()) {
+          break;
+        }
       }
     }
 
