@@ -77,8 +77,6 @@ private:
     CV_Assert(camera_info.D.size() == 0 || camera_info.D.size() == 4 || camera_info.D.size() == 5 ||
               camera_info.D.size() == 8 || camera_info.D.size() == 12 ||
               camera_info.D.size() == 14);
-    // official reference of opencv says size of D should be 4, 5, or 8,
-    // but source on github looks allow 0, 12, and 14, too.
 
     // copy entire camera info to return it via toCameraInfo()
     camera_info_ = camera_info;
