@@ -21,6 +21,79 @@ public:
 
   virtual ~FisheyeCameraModel() {}
 
+  virtual void fromCameraInfo(const sensor_msgs::CameraInfo &camera_info) {
+    // assert distortion type and number of distortion parameters
+    CV_Assert(camera_info.distortion_model == "fisheye");
+    CV_Assert(camera_info.D.size() == 0 /* no distortion & fov */ ||
+              camera_info.D.size() == 1 /* fov only */ ||
+              camera_info.D.size() == 4 /* distortion only */ ||
+              camera_info.D.size() == 5 /* distortion & fov */);
+
+    // copy entire camera info to return it via toCameraInfo()
+    camera_info_ = camera_info;
+
+    // copy full resolution camera matrix
+    std::copy(camera_info.K.begin(), camera_info.K.end(), camera_matrix_.val);
+
+    // adust offset of principal points.
+    // (this should be performed against full camera matrix
+    // because offsets are written in full resolution)
+    if (camera_info.roi.x_offset != 0) {
+      camera_matrix_(0, 2) -= camera_info.roi.x_offset;
+    }
+    if (camera_info.roi.y_offset != 0) {
+      camera_matrix_(1, 2) -= camera_info.roi.y_offset;
+    }
+
+    // adust image scaling
+    if (camera_info.binning_x != 0 && camera_info.binning_x != 1) {
+      camera_matrix_(0, 0) /= camera_info.binning_x;
+      camera_matrix_(0, 1) /= camera_info.binning_x;
+      camera_matrix_(0, 2) /= camera_info.binning_x;
+    }
+    if (camera_info.binning_y != 0 && camera_info.binning_y != 1) {
+      camera_matrix_(1, 0) /= camera_info.binning_y;
+      camera_matrix_(1, 1) /= camera_info.binning_y;
+      camera_matrix_(1, 2) /= camera_info.binning_y;
+    }
+
+    // copy distortion coefficients which are independent from image resolution
+    // (do not copy the last element of camera_info.D because it is field of view)
+    switch (camera_info.D.size()) {
+    case 0: /* no distortion & fov */
+      dist_coeffs_.resize(4, 0.);
+      fov_ = M_PI;
+      break;
+    case 1: /* fov only */
+      dist_coeffs_.resize(4, 0.);
+      fov_ = camera_info.D[0];
+      break;
+    case 4: /* distortion only */
+      dist_coeffs_ = camera_info.D;
+      fov_ = M_PI;
+      break;
+    case 5: /* distortion & fov */
+      dist_coeffs_.assign(camera_info.D.begin(), camera_info.D.begin() + 4);
+      fov_ = camera_info.D[4];
+      break;
+    default: {
+      static const bool SHOULD_NOT_REACH_HERE_BUG(false);
+      CV_Assert(SHOULD_NOT_REACH_HERE_BUG);
+      break;
+    }
+    }
+
+    // copy image size info
+    frame_.x = camera_info.roi.x_offset;
+    frame_.y = camera_info.roi.y_offset;
+    frame_.width = (camera_info.roi.width == 0 ? camera_info.width : camera_info.roi.width);
+    frame_.height = (camera_info.roi.height == 0 ? camera_info.height : camera_info.roi.height);
+  }
+
+  virtual sensor_msgs::CameraInfoPtr toCameraInfo() const {
+    return boost::make_shared< sensor_msgs::CameraInfo >(camera_info_);
+  }
+
 private:
   virtual void onProject3dToPixel(const cv::Mat &src, cv::Mat &dst, cv::Mat &mask) const {
     // project 3D points in the camera coordinate into the 2D image coordinate
@@ -102,79 +175,6 @@ private:
     dst = cv::Affine3d(vec_rot).rotation() * cv::Point3d(0., 0., 1.);
 
     return true;
-  }
-
-  virtual void fromCameraInfo(const sensor_msgs::CameraInfo &camera_info) {
-    // assert distortion type and number of distortion parameters
-    CV_Assert(camera_info.distortion_model == "fisheye");
-    CV_Assert(camera_info.D.size() == 0 /* no distortion & fov */ ||
-              camera_info.D.size() == 1 /* fov only */ ||
-              camera_info.D.size() == 4 /* distortion only */ ||
-              camera_info.D.size() == 5 /* distortion & fov */);
-
-    // copy entire camera info to return it via toCameraInfo()
-    camera_info_ = camera_info;
-
-    // copy full resolution camera matrix
-    std::copy(camera_info.K.begin(), camera_info.K.end(), camera_matrix_.val);
-
-    // adust offset of principal points.
-    // (this should be performed against full camera matrix
-    // because offsets are written in full resolution)
-    if (camera_info.roi.x_offset != 0) {
-      camera_matrix_(0, 2) -= camera_info.roi.x_offset;
-    }
-    if (camera_info.roi.y_offset != 0) {
-      camera_matrix_(1, 2) -= camera_info.roi.y_offset;
-    }
-
-    // adust image scaling
-    if (camera_info.binning_x != 0 && camera_info.binning_x != 1) {
-      camera_matrix_(0, 0) /= camera_info.binning_x;
-      camera_matrix_(0, 1) /= camera_info.binning_x;
-      camera_matrix_(0, 2) /= camera_info.binning_x;
-    }
-    if (camera_info.binning_y != 0 && camera_info.binning_y != 1) {
-      camera_matrix_(1, 0) /= camera_info.binning_y;
-      camera_matrix_(1, 1) /= camera_info.binning_y;
-      camera_matrix_(1, 2) /= camera_info.binning_y;
-    }
-
-    // copy distortion coefficients which are independent from image resolution
-    // (do not copy the last element of camera_info.D because it is field of view)
-    switch (camera_info.D.size()) {
-    case 0: /* no distortion & fov */
-      dist_coeffs_.resize(4, 0.);
-      fov_ = M_PI;
-      break;
-    case 1: /* fov only */
-      dist_coeffs_.resize(4, 0.);
-      fov_ = camera_info.D[0];
-      break;
-    case 4: /* distortion only */
-      dist_coeffs_ = camera_info.D;
-      fov_ = M_PI;
-      break;
-    case 5: /* distortion & fov */
-      dist_coeffs_.assign(camera_info.D.begin(), camera_info.D.begin() + 4);
-      fov_ = camera_info.D[4];
-      break;
-    default: {
-      static const bool SHOULD_NOT_REACH_HERE_BUG(false);
-      CV_Assert(SHOULD_NOT_REACH_HERE_BUG);
-      break;
-    }
-    }
-
-    // copy image size info
-    frame_.x = camera_info.roi.x_offset;
-    frame_.y = camera_info.roi.y_offset;
-    frame_.width = (camera_info.roi.width == 0 ? camera_info.width : camera_info.roi.width);
-    frame_.height = (camera_info.roi.height == 0 ? camera_info.height : camera_info.roi.height);
-  }
-
-  virtual sensor_msgs::CameraInfoPtr toCameraInfo() const {
-    return boost::make_shared< sensor_msgs::CameraInfo >(camera_info_);
   }
 
 private:
