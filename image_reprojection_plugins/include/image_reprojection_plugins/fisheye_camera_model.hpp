@@ -43,26 +43,56 @@ private:
   }
 
   virtual void onProjectPixelTo3dRay(const cv::Mat &src, cv::Mat &dst, cv::Mat &mask) const {
-    // reproject 2D points in the image coordinate to the camera coordinate
-    /*
-    cv::fisheye::undistortPointsTo3D(src.reshape(2, src.total()), cam, camera_matrix_,
-                                     dist_coeffs_);
-                                     */
-    dst = dst.reshape(3, src.size().height);
+    // allocate dst points
+    dst.create(src.size(), CV_32FC3);
 
-    // update mask to indicate valid output points.
-    // an output point is valid when
+    // update dst points when
     //   - corresponding input pixel is valid (input mask is valid)
     //   - corresponding input pixel is in image frame
-    //   - output ray direction is in field of view
-    for (int x = 0; x < mask.size().width; ++x) {
-      for (int y = 0; y < mask.size().height; ++y) {
+    // if update of dst point succeeded, set corresponding mask to 1, otherwise 0
+    for (int x = 0; x < src.size().width; ++x) {
+      for (int y = 0; y < src.size().height; ++y) {
         unsigned char &m(mask.at< unsigned char >(y, x));
         const cv::Point2f &s(src.at< cv::Point2f >(y, x));
-        const cv::Point3f &d(dst.at< cv::Point3f >(y, x));
-        m = (m != 0 && frame_.contains(s) && std::acos(d.z / cv::norm(d)) < fov_) ? 1 : 0;
+        cv::Point3f &d(dst.at< cv::Point3f >(y, x));
+        m = (m != 0 && frame_.contains(s) && projectPixelPointTo3dRay(s, d)) ? 1 : 0;
       }
     }
+  }
+
+  bool projectPixelPointTo3dRay(const cv::Point2f &src, cv::Point3f &dst) const {
+    // distorted point in camera coordinate
+    const cv::Point3d distorted((src.x - camera_matrix_(0, 2)) / camera_matrix_(0, 0),
+                                (src.y - camera_matrix_(1, 2)) / camera_matrix_(1, 1), 1.);
+
+    // angles of distorted/undistorted points from z-axis
+    const double theta_d(cv::sqrt(distorted.x * distorted.x + distorted.y * distorted.y));
+    double theta(theta_d);
+    if (theta_d > 1e-8) {
+      // compensate distortion iteratively
+      for (int i = 0; i < 10; ++i) {
+        const double theta2(theta * theta);
+        const double theta4(theta2 * theta2);
+        const double theta6(theta4 * theta2);
+        const double theta8(theta6 * theta2);
+        theta = theta_d / (1 + dist_coeffs_[0] * theta2 + dist_coeffs_[1] * theta4 +
+                           dist_coeffs_[2] * theta6 + dist_coeffs_[3] * theta8);
+      }
+    }
+
+    // check undistorted point is in field of view
+    if (theta > fov_ / 2.) {
+      return false;
+    }
+
+    // undistort point
+    const cv::Vec3d axis_rot(-distorted.y, distorted.x, 0.);
+    const cv::Vec3d vec_rot(theta * cv::normalize(axis_rot));
+    cv::Matx33d mat_rot;
+    cv::Rodrigues(vec_rot, mat_rot);
+    dst = mat_rot * cv::Point3d(0., 0., 1.);
+
+    return true;
   }
 
   virtual void fromCameraInfo(const sensor_msgs::CameraInfo &camera_info) {
