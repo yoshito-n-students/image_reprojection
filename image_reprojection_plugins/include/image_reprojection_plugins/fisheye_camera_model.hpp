@@ -99,9 +99,7 @@ private:
     // undistort point
     const cv::Vec3d axis_rot(-distorted.y, distorted.x, 0.);
     const cv::Vec3d vec_rot(theta * cv::normalize(axis_rot));
-    cv::Matx33d mat_rot;
-    cv::Rodrigues(vec_rot, mat_rot);
-    dst = mat_rot * cv::Point3d(0., 0., 1.);
+    dst = cv::Affine3d(vec_rot).rotation() * cv::Point3d(0., 0., 1.);
 
     return true;
   }
