@@ -240,5 +240,17 @@ if(TARGET test_mesh_surface_model)
   )
 endif()
 
+catkin_add_gtest(
+  test_camera_models 
+  test/test_camera_models.cpp
+)
+if(TARGET test_camera_models)
+  target_link_libraries(
+    test_camera_models
+    ${catkin_LIBRARIES}
+    ${OpenCV_LIBRARIES}
+  )
+endif()
+
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
