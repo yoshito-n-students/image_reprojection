@@ -8,7 +8,7 @@
 #include <image_reprojection/camera_model.hpp>
 #include <sensor_msgs/CameraInfo.h>
 
-#include <opencv2/calib3d/calib3d.hpp>
+#include <opencv2/calib3d/calib3d.hpp> //for cv::Affine3d
 #include <opencv2/core/core.hpp>
 
 #include <boost/make_shared.hpp>
@@ -96,24 +96,59 @@ public:
 
 private:
   virtual void onProject3dToPixel(const cv::Mat &src, cv::Mat &dst, cv::Mat &mask) const {
-    // project 3D points in the camera coordinate into the 2D image coordinate
-    cv::fisheye::projectPoints(src.reshape(3, src.total()), dst, cv::Vec3d::all(0.),
-                               cv::Vec3d::all(0.), camera_matrix_, dist_coeffs_);
-    dst = dst.reshape(2, src.size().height);
+    // allocate dst pixels
+    dst.create(src.size(), CV_32FC2);
 
-    // update mask to indicate valid output points.
-    // an output point is valid when
+    // update dst points when
     //   - corresponding input point is valid (input mask is valid)
-    //   - corresponding input point is in field of view
-    //   - output pixel is in the image frame
+    // if update of dst pixel succeeded, set corresponding mask to 1, otherwise 0
     for (int x = 0; x < mask.size().width; ++x) {
       for (int y = 0; y < mask.size().height; ++y) {
         unsigned char &m(mask.at< unsigned char >(y, x));
         const cv::Point3f &s(src.at< cv::Point3f >(y, x));
-        const cv::Point2f &d(dst.at< cv::Point2f >(y, x));
-        m = (m != 0 && std::acos(s.z / cv::norm(s)) < fov_ && frame_.contains(d)) ? 1 : 0;
+        cv::Point2f &d(dst.at< cv::Point2f >(y, x));
+        m = (m != 0 && project3dPointToPixel(s, d)) ? 1 : 0;
       }
     }
+  }
+
+  bool project3dPointToPixel(const cv::Point3f &src, cv::Point2f &dst) const {
+    // angle between source point and z-axis
+    const double theta(std::acos(src.z / cv::norm(src)));
+
+    // check source point is in field of view
+    if (theta > fov_ / 2.) {
+      return false;
+    }
+
+    // distance between distorted point and z-axis
+    double theta_d;
+    {
+      const double theta2(theta * theta), theta4(theta2 * theta2), theta6(theta4 * theta2),
+          theta8(theta6 * theta2);
+      theta_d = theta * (1. + dist_coeffs_[0] * theta2 + dist_coeffs_[1] * theta4 +
+                         dist_coeffs_[2] * theta6 + dist_coeffs_[3] * theta8);
+    }
+
+    // distort point
+    cv::Point2d distorted;
+    {
+      const double scale_d(theta_d / cv::sqrt(src.x * src.x + src.y * src.y));
+      distorted.x = scale_d * src.x;
+      distorted.y = scale_d * src.y;
+      // distorted.z = 1.;
+    }
+
+    // transform distorted point to pixel coordinate
+    dst.x = camera_matrix_(0, 0) * distorted.x + camera_matrix_(0, 2);
+    dst.y = camera_matrix_(1, 1) * distorted.y + camera_matrix_(1, 2);
+
+    // check dst pixel is in image frame
+    if (!frame_.contains(dst)) {
+      return false;
+    }
+
+    return true;
   }
 
   virtual void onProjectPixelTo3dRay(const cv::Mat &src, cv::Mat &dst, cv::Mat &mask) const {
@@ -122,25 +157,29 @@ private:
 
     // update dst points when
     //   - corresponding input pixel is valid (input mask is valid)
-    //   - corresponding input pixel is in image frame
     // if update of dst point succeeded, set corresponding mask to 1, otherwise 0
     for (int x = 0; x < src.size().width; ++x) {
       for (int y = 0; y < src.size().height; ++y) {
         unsigned char &m(mask.at< unsigned char >(y, x));
         const cv::Point2f &s(src.at< cv::Point2f >(y, x));
         cv::Point3f &d(dst.at< cv::Point3f >(y, x));
-        m = (m != 0 && frame_.contains(s) && projectPixelPointTo3dRay(s, d)) ? 1 : 0;
+        m = (m != 0 && projectPixelPointTo3dRay(s, d)) ? 1 : 0;
       }
     }
   }
 
   bool projectPixelPointTo3dRay(const cv::Point2f &src, cv::Point3f &dst) const {
+    // check source pixel is in image frame
+    if (!frame_.contains(src)) {
+      return false;
+    }
+
     // distorted point in camera coordinate
     const cv::Point3d distorted((src.x - camera_matrix_(0, 2)) / camera_matrix_(0, 0),
                                 (src.y - camera_matrix_(1, 2)) / camera_matrix_(1, 1), 1.);
-
-    // angles of distorted/undistorted points from z-axis
     const double theta_d(cv::sqrt(distorted.x * distorted.x + distorted.y * distorted.y));
+
+    // angle of undistorted point from z-axis
     double theta(theta_d);
     if (theta_d > 1e-8) {
       // newton's method:
