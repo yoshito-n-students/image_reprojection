@@ -155,9 +155,51 @@ TEST(PinholeCameraModel, pixelTo3dRayToPixel) {
   testPixelTo3dRayToPixel(model, randomPixels(num_pixels, range_pixels));
 }
 
-TEST(FisheyeCameraModel, 3dToPixelTo3dRay) {}
+TEST(FisheyeCameraModel, 3dToPixelTo3dRay) {
+  // camera info
+  sensor_msgs::CameraInfo camera_info;
+  camera_info.distortion_model = "fisheye";
+  camera_info.width = 1980;
+  camera_info.height = 1080;
+  camera_info.K[0] = 300.; // fx: K(0,0)
+  camera_info.K[2] = 495.; // cx: K(0,2)
+  camera_info.K[4] = 300.; // fy: K(1,1)
+  camera_info.K[5] = 540.; // cy: K(1,2)
+  camera_info.K[8] = 1.;   // K(2,2)
+  camera_info.D.resize(1);
+  camera_info.D[0] = 200. * M_PI / 180.; // fov
 
-TEST(FisheyeCameraModel, pixelTo3dRayToPixel) {}
+  // init camera model
+  irp::FisheyeCameraModel model;
+  model.fromCameraInfo(camera_info);
+
+  // perform test with random points
+  test3dToPixelTo3dRay(model, randomPoints(cv::Size(100, 100)));
+}
+
+TEST(FisheyeCameraModel, pixelTo3dRayToPixel) {
+  // camera info
+  sensor_msgs::CameraInfo camera_info;
+  camera_info.distortion_model = "fisheye";
+  camera_info.width = 1980;
+  camera_info.height = 1080;
+  camera_info.K[0] = 300.;  // fx: K(0,0)
+  camera_info.K[2] = 1485.; // cx: K(0,2)
+  camera_info.K[4] = 300.;  // fy: K(1,1)
+  camera_info.K[5] = 540.;  // cy: K(1,2)
+  camera_info.K[8] = 1.;    // K(2,2)
+  camera_info.D.resize(1);
+  camera_info.D[0] = 200. * M_PI / 180.; // fov
+
+  // init camera model
+  irp::FisheyeCameraModel model;
+  model.fromCameraInfo(camera_info);
+
+  // perform test with random pixels
+  const cv::Size num_pixels(100, 100);
+  const cv::Rect range_pixels(cv::Point(-500, -500), cv::Size(2500, 2000));
+  testPixelTo3dRayToPixel(model, randomPixels(num_pixels, range_pixels));
+}
 
 int main(int argc, char *argv[]) {
   testing::InitGoogleTest(&argc, argv);
