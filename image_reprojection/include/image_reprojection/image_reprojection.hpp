@@ -98,7 +98,7 @@ private:
     // setup the destination image publisher
     dst_camera_publisher_ = it.advertiseCamera("dst_camera", 1, true);
 
-    // setup the destination camera info updator
+    // setup the destination camera info updater
     dst_camera_info_server_ =
         nh.advertiseService("set_camera_info", &ImageReprojection::onDstCameraInfoSet, this);
 
@@ -106,21 +106,26 @@ private:
     surface_subscriber_ = nh.subscribe("surface", 1, &ImageReprojection::onSurfaceRecieved, this);
 
     // start the source image subscriber
-    {
-      const bool background(pnh.param("map_update/background", false));
-      if (background) {
-        const ros::Rate rate(pnh.param("map_update/frequency", 5.));
-        map_timer_ = nh.createTimer(rate, &ImageReprojection::onMapUpdateEvent, this);
-      }
-      // TODO: launch multiple subscribers
+    // (TODO: launch multiple subscribers)
+    if (pnh.param("map_update/background", false)) {
+      // background map updater
+      map_timer_ = nh.createTimer(ros::Rate(pnh.param("map_update/frequency", 5.)),
+                                  &ImageReprojection::onMapUpdateEvent, this);
+      // source image subscriber not updating map
       const image_transport::TransportHints default_hints;
-      src_camera_subscriber_ =
-          it.subscribeCamera("src_camera0", 1,
-                             background ? &ImageReprojection::onSrcCameraRecievedFast
-                                        : &ImageReprojection::onSrcCameraRecieved,
-                             this,
-                             image_transport::TransportHints(default_hints.getTransport(),
-                                                             default_hints.getRosHints(), pnh));
+      src_camera_subscriber_ = it.subscribeCamera(
+          "src_camera0", 1,
+          boost::bind(&ImageReprojection::onSrcCameraRecieved, this, _1, _2, false), ros::VoidPtr(),
+          image_transport::TransportHints(default_hints.getTransport(), default_hints.getRosHints(),
+                                          pnh));
+    } else {
+      // source image subscriber updating map
+      const image_transport::TransportHints default_hints;
+      src_camera_subscriber_ = it.subscribeCamera(
+          "src_camera0", 1,
+          boost::bind(&ImageReprojection::onSrcCameraRecieved, this, _1, _2, true), ros::VoidPtr(),
+          image_transport::TransportHints(default_hints.getTransport(), default_hints.getRosHints(),
+                                          pnh));
     }
   }
 
@@ -146,7 +151,8 @@ private:
   }
 
   void onSrcCameraRecieved(const sensor_msgs::ImageConstPtr &ros_src,
-                           const sensor_msgs::CameraInfoConstPtr &src_camera_info) {
+                           const sensor_msgs::CameraInfoConstPtr &src_camera_info,
+                           const bool do_update_map) {
     try {
       // update source camera model
       src_camera_model_->fromCameraInfo(*src_camera_info);
@@ -170,11 +176,13 @@ private:
       cv_dst.header.frame_id = dst_camera_info->header.frame_id;
       cv_dst.encoding = cv_src->encoding;
 
-      // update mapping between the source and destination images
-      // (this elapses 90+% of excecution time of this function
-      //  and can be done without receiving the source image.
-      //  this is why the fast mode is requred for some application.)
-      updateMap();
+      if (do_update_map) {
+        // update mapping between the source and destination images
+        // (this elapses 90+% of excecution time of this function
+        //  and can be done without receiving the source image.
+        //  this is why the fast mode is requred for some application.)
+        updateMap();
+      }
 
       // fill the destination image by remapping the source image
       remap(cv_src->image, cv_dst.image);
@@ -183,41 +191,6 @@ private:
       dst_camera_publisher_.publish(cv_dst.toImageMsg(), dst_camera_info);
     } catch (const std::exception &ex) {
       ROS_ERROR_STREAM("onSrcRecieved: " << ex.what());
-    }
-  }
-
-  void onSrcCameraRecievedFast(const sensor_msgs::ImageConstPtr &ros_src,
-                               const sensor_msgs::CameraInfoConstPtr &src_camera_info) {
-    try {
-      // update source camera model
-      src_camera_model_->fromCameraInfo(*src_camera_info);
-
-      // do nothing else if there is no node that subscribes this node
-      if (dst_camera_publisher_.getNumSubscribers() == 0) {
-        return;
-      }
-
-      // convert the ROS source image to an opencv image
-      cv_bridge::CvImageConstPtr cv_src(cv_bridge::toCvShare(ros_src));
-
-      // get destination camera info
-      const sensor_msgs::CameraInfoConstPtr dst_camera_info(dst_camera_model_->toCameraInfo());
-      CV_Assert(dst_camera_info);
-
-      // prepare the destination image
-      cv_bridge::CvImage cv_dst;
-      cv_dst.header.seq = cv_src->header.seq;
-      cv_dst.header.stamp = cv_src->header.stamp;
-      cv_dst.header.frame_id = dst_camera_info->header.frame_id;
-      cv_dst.encoding = cv_src->encoding;
-
-      // fill the destination image by remapping the source image
-      remap(cv_src->image, cv_dst.image);
-
-      // publish the destination image
-      dst_camera_publisher_.publish(cv_dst.toImageMsg(), dst_camera_info);
-    } catch (const std::exception &ex) {
-      ROS_ERROR_STREAM("onSrcRecievedFast: " << ex.what());
     }
   }
 
