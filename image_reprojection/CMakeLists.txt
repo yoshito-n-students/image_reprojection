@@ -6,7 +6,7 @@ project(image_reprojection)
 ## is used, also find other catkin packages
 find_package(
   catkin REQUIRED COMPONENTS
-  camera_info_manager
+  camera_calibration_parsers
   cv_bridge
   image_transport
   nodelet
@@ -110,7 +110,7 @@ catkin_package(
   INCLUDE_DIRS include
 #  LIBRARIES image_reprojection
   CATKIN_DEPENDS 
-  camera_info_manager
+  camera_calibration_parsers
   cv_bridge 
   image_transport 
   nodelet 

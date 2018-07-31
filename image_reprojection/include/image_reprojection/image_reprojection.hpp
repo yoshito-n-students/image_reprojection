@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-#include <camera_info_manager/camera_info_manager.h>
+#include <camera_calibration_parsers/parse.h>
 #include <cv_bridge/cv_bridge.h>
 #include <image_reprojection/camera_model.hpp>
 #include <image_reprojection/surface_model.hpp>
@@ -18,9 +18,12 @@
 #include <ros/console.h>
 #include <ros/node_handle.h>
 #include <ros/rate.h>
+#include <ros/service_server.h>
+#include <ros/subscriber.h>
 #include <ros/timer.h>
 #include <sensor_msgs/CameraInfo.h>
 #include <sensor_msgs/Image.h>
+#include <sensor_msgs/SetCameraInfo.h>
 #include <tf/transform_listener.h>
 #include <topic_tools/shape_shifter.h>
 
@@ -42,7 +45,8 @@ public:
   virtual ~ImageReprojection() {
     // stop using plugins
     src_camera_subscriber_.shutdown();
-    timer_.stop();
+    dst_camera_info_server_.shutdown();
+    map_timer_.stop();
 
     // destroy all plugins before destroying loaders
     src_camera_model_.reset();
@@ -67,9 +71,6 @@ private:
       std::string type;
       CV_Assert(pnh.getParam("dst_camera/model", type));
       dst_camera_model_ = camera_model_loader_.createInstance(type);
-      dst_camera_info_manager_.reset(new camera_info_manager::CameraInfoManager(
-          nh, pnh.param< std::string >("dst_camera/name", "dst_camera"),
-          pnh.param< std::string >("dst_camera/info_url", "")));
     }
     {
       std::string type;
@@ -77,38 +78,31 @@ private:
       surface_model_ = surface_model_loader_.createInstance(type);
     }
 
-    // TODO: set dst_image/size from dst_camera_info_manager_->getCameraInfo().
-    //       also, use map_update/binning_{x,y} instread of map_update/size
-    //       because dst_image/size can dynamically change.
-    //       then, initial map should be generated at beggining of updateMap()
-    // init mapping between source and destination images
+    // init destination camera model
     {
-      // load sizes of the initial and final maps (must be initial <= final)
-      const cv::Size size_dst(sizeParam(pnh, "dst_image/size", cv::Size(500, 500)));
-      const cv::Size size_seed(sizeParam(pnh, "map_update/size", cv::Size(250, 250)));
-      CV_Assert(size_dst.width >= size_seed.width && size_dst.height >= size_seed.height);
-
-      // init final map whose size is same as the destination image
-      map_.create(size_dst, CV_32FC2);
-      for (int x = 0; x < map_.size().width; ++x) {
-        for (int y = 0; y < map_.size().height; ++y) {
-          map_.at< cv::Point2f >(y, x) = cv::Point2f(x + 0.5, y + 0.5);
-        }
-      }
-      mask_ = cv::Mat::ones(map_.size(), CV_8UC1);
-
-      // init the seed map by resizing the final map
-      cv::resize(map_, seed_map_, size_seed);
+      std::string info_file, name;
+      CV_Assert(pnh.getParam("dst_camera/info_file", info_file));
+      CV_Assert(pnh.getParam("dst_camera/name", name));
+      sensor_msgs::CameraInfo info;
+      CV_Assert(camera_calibration_parsers::readCalibration(info_file, name, info));
+      dst_camera_model_->fromCameraInfo(info);
     }
+
+    // load parameters
+    map_binning_x_ = pnh.param("map_update/binning_x", 5);
+    map_binning_y_ = pnh.param("map_update/binning_y", 5);
 
     // setup the coordinate frame transformer
     tf_listener_.reset(new tf::TransformListener(nh));
-    CV_Assert(tf_listener_);
 
     // setup the destination image publisher
     dst_camera_publisher_ = it.advertiseCamera("dst_camera", 1, true);
 
-    //
+    // setup the destination camera info updator
+    dst_camera_info_server_ =
+        nh.advertiseService("set_camera_info", &ImageReprojection::onDstCameraInfoSet, this);
+
+    // setup the surface subscriber
     surface_subscriber_ = nh.subscribe("surface", 1, &ImageReprojection::onSurfaceRecieved, this);
 
     // start the source image subscriber
@@ -116,16 +110,17 @@ private:
       const bool background(pnh.param("map_update/background", false));
       if (background) {
         const ros::Rate rate(pnh.param("map_update/frequency", 5.));
-        timer_ = nh.createTimer(rate, &ImageReprojection::onMapUpdateEvent, this);
+        map_timer_ = nh.createTimer(rate, &ImageReprojection::onMapUpdateEvent, this);
       }
       // TODO: launch multiple subscribers
       const image_transport::TransportHints default_hints;
-      src_camera_subscriber_ = it.subscribeCamera(
-          "src_camera0", 1,
-          background ? &ImageReprojection::onSrcRecievedFast : &ImageReprojection::onSrcRecieved,
-          this,
-          image_transport::TransportHints(default_hints.getTransport(), default_hints.getRosHints(),
-                                          pnh));
+      src_camera_subscriber_ =
+          it.subscribeCamera("src_camera0", 1,
+                             background ? &ImageReprojection::onSrcCameraRecievedFast
+                                        : &ImageReprojection::onSrcCameraRecieved,
+                             this,
+                             image_transport::TransportHints(default_hints.getTransport(),
+                                                             default_hints.getRosHints(), pnh));
     }
   }
 
@@ -137,10 +132,26 @@ private:
     }
   }
 
-  void onSrcRecieved(const sensor_msgs::ImageConstPtr &ros_src,
-                     const sensor_msgs::CameraInfoConstPtr &src_camera_info) {
+  bool onDstCameraInfoSet(sensor_msgs::SetCameraInfo::Request &request,
+                          sensor_msgs::SetCameraInfo::Response &response) {
     try {
-      // do nothing if there is no node that subscribes this node
+      dst_camera_model_->fromCameraInfo(request.camera_info);
+      response.success = true;
+    } catch (const std::exception &ex) {
+      ROS_ERROR_STREAM("onDstCameraInfoSet: " << ex.what());
+      response.success = false;
+      response.status_message = ex.what();
+    }
+    return response.success;
+  }
+
+  void onSrcCameraRecieved(const sensor_msgs::ImageConstPtr &ros_src,
+                           const sensor_msgs::CameraInfoConstPtr &src_camera_info) {
+    try {
+      // update source camera model
+      src_camera_model_->fromCameraInfo(*src_camera_info);
+
+      // do nothing else if there is no node that subscribes this node
       if (dst_camera_publisher_.getNumSubscribers() == 0) {
         return;
       }
@@ -148,7 +159,7 @@ private:
       // convert the ROS source image to an opencv image
       cv_bridge::CvImageConstPtr cv_src(cv_bridge::toCvShare(ros_src));
 
-      //
+      // get destination camera info
       const sensor_msgs::CameraInfoConstPtr dst_camera_info(dst_camera_model_->toCameraInfo());
       CV_Assert(dst_camera_info);
 
@@ -175,10 +186,13 @@ private:
     }
   }
 
-  void onSrcRecievedFast(const sensor_msgs::ImageConstPtr &ros_src,
-                         const sensor_msgs::CameraInfoConstPtr &src_camera_info) {
+  void onSrcCameraRecievedFast(const sensor_msgs::ImageConstPtr &ros_src,
+                               const sensor_msgs::CameraInfoConstPtr &src_camera_info) {
     try {
-      // do nothing if there is no node that subscribes this node
+      // update source camera model
+      src_camera_model_->fromCameraInfo(*src_camera_info);
+
+      // do nothing else if there is no node that subscribes this node
       if (dst_camera_publisher_.getNumSubscribers() == 0) {
         return;
       }
@@ -186,7 +200,7 @@ private:
       // convert the ROS source image to an opencv image
       cv_bridge::CvImageConstPtr cv_src(cv_bridge::toCvShare(ros_src));
 
-      //
+      // get destination camera info
       const sensor_msgs::CameraInfoConstPtr dst_camera_info(dst_camera_model_->toCameraInfo());
       CV_Assert(dst_camera_info);
 
@@ -216,26 +230,49 @@ private:
   }
 
   void updateMap() {
-    // calculate mapping from destination image coord to destination object coord
+    // get destination camera info
+    const sensor_msgs::CameraInfoConstPtr dst_camera_info(dst_camera_model_->toCameraInfo());
+    CV_Assert(dst_camera_info);
+
+    // figure out destination image size
+    const cv::Size dst_image_size(
+        (dst_camera_info->roi.width == 0 ? dst_camera_info->width : dst_camera_info->roi.width) /
+            (dst_camera_info->binning_x == 0 ? 1 : dst_camera_info->binning_x),
+        (dst_camera_info->roi.height == 0 ? dst_camera_info->height : dst_camera_info->roi.height) /
+            (dst_camera_info->binning_y == 0 ? 1 : dst_camera_info->binning_y));
+
+    // create initial map and mask
+    cv::Mat binned_map, binned_mask;
+    {
+      cv::Mat full_map(dst_image_size, CV_32FC2);
+      for (int x = 0; x < dst_image_size.width; ++x) {
+        for (int y = 0; y < dst_image_size.height; ++y) {
+          full_map.at< cv::Point2f >(y, x) = cv::Point2f(x + 0.5, y + 0.5);
+        }
+      }
+      const cv::Size binned_map_size(dst_image_size.width / map_binning_x_,
+                                     dst_image_size.height / map_binning_y_);
+      cv::resize(full_map, binned_map, binned_map_size);
+      binned_mask = cv::Mat::ones(binned_map_size, CV_8UC1);
+    }
+
+    // calculate mapping from destination pixels to ray toward surface
     cv::Mat ray_directions;
-    cv::Mat updated_mask(cv::Mat::ones(seed_map_.size(), CV_8UC1));
-    dst_camera_model_->projectPixelTo3dRay(seed_map_, ray_directions, updated_mask);
+    dst_camera_model_->projectPixelTo3dRay(binned_map, ray_directions, binned_mask);
 
     // transform rays into surface coordinate frame
     cv::Vec3f ray_origin(0., 0., 0.);
     {
-      const sensor_msgs::CameraInfoConstPtr dst_camera_info(dst_camera_model_->toCameraInfo());
-      CV_Assert(dst_camera_info);
       tf::StampedTransform dst2surface;
       tf_listener_->lookupTransform(dst_camera_info->header.frame_id, surface_model_->getFrameId(),
                                     ros::Time(0), dst2surface);
       transform(ray_origin, dst2surface);
-      transform(ray_directions, dst2surface, updated_mask);
+      transform(ray_directions, dst2surface, binned_mask);
     }
 
-    // calculate mapping to source object coord
+    // calculate mapping from ray to intersection point on surface
     cv::Mat intersections;
-    surface_model_->intersection(ray_origin, ray_directions, intersections, updated_mask);
+    surface_model_->intersection(ray_origin, ray_directions, intersections, binned_mask);
 
     // transform intersection points into camera frame
     {
@@ -244,18 +281,17 @@ private:
       tf::StampedTransform surface2src;
       tf_listener_->lookupTransform(surface_model_->getFrameId(), src_camera_info->header.frame_id,
                                     ros::Time(0), surface2src);
-      transform(intersections, surface2src, updated_mask);
+      transform(intersections, surface2src, binned_mask);
     }
 
-    // calculate mapping to source image coord that is the final map
-    cv::Mat updated_map;
-    src_camera_model_->project3dToPixel(intersections, updated_map, updated_mask);
+    // calculate mapping from points on surface to source pixels
+    src_camera_model_->project3dToPixel(intersections, binned_map, binned_mask);
 
     // write updated mapping between source and destination images
     {
       boost::lock_guard< boost::mutex > lock(mutex_);
-      cv::resize(updated_map, map_, map_.size());
-      cv::resize(updated_mask, mask_, mask_.size());
+      cv::resize(binned_map, map_, dst_image_size);
+      cv::resize(binned_mask, mask_, dst_image_size);
     }
   }
 
@@ -310,26 +346,28 @@ private:
   // models
   CameraModelPtr src_camera_model_;
   CameraModelPtr dst_camera_model_;
-  boost::scoped_ptr< camera_info_manager::CameraInfoManager > dst_camera_info_manager_;
   SurfaceModelPtr surface_model_;
 
   // subscriber for source image and publisher for destination image
   image_transport::CameraSubscriber src_camera_subscriber_;
   ros::Subscriber surface_subscriber_;
   image_transport::CameraPublisher dst_camera_publisher_;
-  ros::Timer timer_;
+  ros::ServiceServer dst_camera_info_server_;
+  ros::Timer map_timer_;
 
   // transformer
   boost::scoped_ptr< tf::TransformListener > tf_listener_;
 
   // parameters
-  cv::Mat seed_map_;
+  int map_binning_x_;
+  int map_binning_y_;
 
   // mapping between source and destination images
   boost::mutex mutex_;
   cv::Mat map_;
   cv::Mat mask_;
 };
+
 } // namespace image_reprojection
 
 #endif /* IMAGE_REPROJECTION_IMAGE_REPROJECTION_HPP */
