@@ -18,7 +18,10 @@ find_package(
   )
 
 ## System dependencies are found with CMake's conventions
-# find_package(Boost REQUIRED COMPONENTS system)
+find_package(
+  OpenCV REQUIRED COMPONENTS 
+  core
+)
 
 
 ## Uncomment this if the package has a setup.py. This macro ensures
@@ -148,7 +151,11 @@ include_directories(
 add_executable(
   image_reprojection_node
   src/image_reprojection_node.cpp
-  )
+)
+add_executable(
+  generate_calibration_file
+  src/generate_calibration_file.cpp
+)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
@@ -159,7 +166,13 @@ target_link_libraries(
   image_reprojection_node
   rt
   ${catkin_LIBRARIES}
-  )
+  ${OpenCV_LIBRARIES}
+)
+target_link_libraries(
+  generate_calibration_file
+  ${catkin_LIBRARIES}
+  ${OpenCV_LIBRARIES}
+)
 
 #############
 ## Install ##
