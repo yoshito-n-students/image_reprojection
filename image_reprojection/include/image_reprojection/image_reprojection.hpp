@@ -220,6 +220,7 @@ private:
       cv::Mat full_map(dst_image_size, CV_32FC2);
       for (int x = 0; x < dst_image_size.width; ++x) {
         for (int y = 0; y < dst_image_size.height; ++y) {
+          // center coordinate of the pixel
           full_map.at< cv::Point2f >(y, x) = cv::Point2f(x + 0.5, y + 0.5);
         }
       }
