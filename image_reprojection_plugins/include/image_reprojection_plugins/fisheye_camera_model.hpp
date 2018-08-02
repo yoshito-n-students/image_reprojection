@@ -95,6 +95,8 @@ public:
   }
 
 private:
+  virtual void onInit() {}
+
   virtual void onProject3dToPixel(const cv::Mat &src, cv::Mat &dst, cv::Mat &mask) const {
     // allocate dst pixels
     dst.create(src.size(), CV_32FC2);

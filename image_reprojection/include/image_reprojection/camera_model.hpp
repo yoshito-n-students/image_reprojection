@@ -1,6 +1,7 @@
 #ifndef IMAGE_REPROJECTION_CAMERA_MODEL_HPP
 #define IMAGE_REPROJECTION_CAMERA_MODEL_HPP
 
+#include <nodelet/nodelet.h>
 #include <sensor_msgs/CameraInfo.h>
 
 #include <boost/shared_ptr.hpp>
@@ -9,7 +10,7 @@
 
 namespace image_reprojection {
 
-class CameraModel {
+class CameraModel : public nodelet::Nodelet {
 public:
   CameraModel() {}
 
@@ -17,7 +18,7 @@ public:
 
   /*
     project 3D points in camera's optical coordinate to camera's 2D pixel coordinate.
-    mask is input and output; as input it should indicate valid input points. 
+    mask is input and output; as input it should indicate valid input points.
     as output it should indicate successfully-projected points.
    */
   void project3dToPixel(const cv::Mat &src, cv::Mat &dst, cv::Mat &mask) const {
@@ -53,7 +54,7 @@ public:
 
   /*
     project points in camera's 2D pixel coordinate to rays in camera's 3D optical coordinate.
-    mask is input and output; as input it should indicate valid input points. 
+    mask is input and output; as input it should indicate valid input points.
     as output it should indicate successfully-projected points.
    */
   void projectPixelTo3dRay(const cv::Mat &src, cv::Mat &dst, cv::Mat &mask) const {
@@ -101,6 +102,8 @@ private:
   /*
     following vitual functions must be implemented in a child class
   */
+  virtual void onInit() = 0; // from nodelet::Nodelet
+
   virtual void onProject3dToPixel(const cv::Mat &src, cv::Mat &dst, cv::Mat &mask) const = 0;
 
   virtual void onProjectPixelTo3dRay(const cv::Mat &src, cv::Mat &dst, cv::Mat &mask) const = 0;

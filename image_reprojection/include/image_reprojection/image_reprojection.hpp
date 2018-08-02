@@ -66,16 +66,22 @@ private:
       std::string type;
       CV_Assert(pnh.getParam("src_camera0/model", type));
       src_camera_model_ = camera_model_loader_.createInstance(type);
+      src_camera_model_->init(pnh.resolveName("src_camera0") + "(" + type + ")", ros::M_string(),
+                              getMyArgv(), &getSTCallbackQueue(), &getMTCallbackQueue());
     }
     {
       std::string type;
       CV_Assert(pnh.getParam("dst_camera/model", type));
       dst_camera_model_ = camera_model_loader_.createInstance(type);
+      dst_camera_model_->init(pnh.resolveName("dst_camera") + "(" + type + ")", ros::M_string(),
+                              getMyArgv(), &getSTCallbackQueue(), &getMTCallbackQueue());
     }
     {
       std::string type;
       CV_Assert(pnh.getParam("surface/model", type));
       surface_model_ = surface_model_loader_.createInstance(type);
+      surface_model_->init(pnh.resolveName("surface") + "(" + type + ")", ros::M_string(),
+                           getMyArgv(), &getSTCallbackQueue(), &getMTCallbackQueue());
     }
 
     // init destination camera model

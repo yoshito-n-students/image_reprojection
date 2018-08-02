@@ -36,6 +36,8 @@ public:
   }
 
 private:
+  virtual void onInit() {}
+
   virtual void update(const topic_tools::ShapeShifter &surface) {
     const MeshStampedConstPtr mesh(surface.instantiate< MeshStamped >());
     CV_Assert(mesh);

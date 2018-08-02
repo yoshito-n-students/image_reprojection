@@ -73,6 +73,8 @@ public:
   }
 
 private:
+  virtual void onInit() {}
+
   virtual void onProject3dToPixel(const cv::Mat &src, cv::Mat &dst, cv::Mat &mask) const {
     // project 3D points in the camera coordinate into the 2D image coordinate
     cv::projectPoints(src.reshape(3, src.total()), cv::Vec3d::all(0.), cv::Vec3d::all(0.),
