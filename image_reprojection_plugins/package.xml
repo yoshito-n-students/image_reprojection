@@ -43,6 +43,7 @@
   <build_depend>cv_bridge</build_depend>
   <build_depend>image_reprojection</build_depend>
   <build_depend>message_generation</build_depend>
+  <build_depend>nav_msgs</build_depend>
   <build_depend>pluginlib</build_depend>
   <build_depend>roscpp</build_depend>
   <build_depend>shape_msgs</build_depend>
@@ -51,6 +52,7 @@
   <run_depend>cv_bridge</run_depend>
   <run_depend>image_reprojection</run_depend>
   <run_depend>message_runtime</run_depend>
+  <run_depend>nav_msgs</run_depend>
   <run_depend>pluginlib</run_depend>
   <run_depend>roscpp</run_depend>
   <run_depend>shape_msgs</run_depend>
@@ -61,6 +63,7 @@
   <!-- The export tag contains other, unspecified, tags -->
   <export>
     <!-- Other tools can request additional information be placed here -->
+    <image_reprojection plugin="${prefix}/plugin_descriptions/dem_surface_model_plugin.xml" />
     <image_reprojection plugin="${prefix}/plugin_descriptions/fisheye_camera_model_plugin.xml" />
     <image_reprojection plugin="${prefix}/plugin_descriptions/mesh_surface_model_plugin.xml" />
     <image_reprojection plugin="${prefix}/plugin_descriptions/ponhole_camera_model_plugin.xml" />

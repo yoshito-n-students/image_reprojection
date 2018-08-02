@@ -9,6 +9,7 @@ find_package(
   cv_bridge
   image_reprojection
   message_generation
+  nav_msgs
   pluginlib
   roscpp
   shape_msgs
@@ -123,6 +124,7 @@ catkin_package(
   cv_bridge 
   image_reprojection 
   message_runtime
+  nav_msgs 
   pluginlib 
   roscpp 
   shape_msgs
@@ -155,6 +157,11 @@ add_library(
   mesh_surface_model_plugin
   src/mesh_surface_model_plugin.cpp
 )
+add_library(
+  dem_surface_model_plugin
+  src/dem_surface_model_plugin.cpp
+)
+
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -184,6 +191,11 @@ target_link_libraries(
 )
 target_link_libraries(
   mesh_surface_model_plugin
+  ${catkin_LIBRARIES}
+  ${OpenCV_LIBRARIES}
+)
+target_link_libraries(
+  dem_surface_model_plugin
   ${catkin_LIBRARIES}
   ${OpenCV_LIBRARIES}
 )
