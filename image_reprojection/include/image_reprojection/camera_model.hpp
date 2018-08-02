@@ -10,6 +10,10 @@
 
 namespace image_reprojection {
 
+/*
+  base class of camera models which convert camera's optical and pixel coordinates.
+  child class may throw std::exception from its overrode functions.
+*/
 class CameraModel : public nodelet::Nodelet {
 public:
   CameraModel() {}
@@ -19,7 +23,7 @@ public:
   /*
     project 3D points in camera's optical coordinate to camera's 2D pixel coordinate.
     mask is input and output; as input it should indicate valid input points.
-    as output it should indicate successfully-projected points.
+    as output it should indicate points successfully-projected into image frame.
    */
   void project3dToPixel(const cv::Mat &src, cv::Mat &dst, cv::Mat &mask) const {
     /*

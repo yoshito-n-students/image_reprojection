@@ -12,6 +12,10 @@
 
 namespace image_reprojection {
 
+/*
+  base class of surface models which calculate intersections vs 3D rays.
+  child class may throw std::exception from its overrode functions.
+*/
 class SurfaceModel : public nodelet::Nodelet {
 public:
   SurfaceModel() {}

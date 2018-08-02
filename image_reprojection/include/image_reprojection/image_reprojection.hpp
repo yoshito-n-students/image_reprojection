@@ -254,6 +254,8 @@ private:
     cv::Mat intersections;
     surface_model_->intersection(ray_origin, ray_directions, intersections, binned_mask);
 
+    // TODO: check intersection points are visible from src camera origin using the surface model
+
     // transform intersection points into camera frame
     {
       const sensor_msgs::CameraInfoConstPtr src_camera_info(src_camera_model_->toCameraInfo());
