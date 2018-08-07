@@ -3,6 +3,7 @@
 #include <image_reprojection/camera_model.hpp>
 #include <image_reprojection_plugins/fisheye_camera_model.hpp>
 #include <image_reprojection_plugins/pinhole_camera_model.hpp>
+#include <ros/init.h>
 
 #include <opencv2/core/core.hpp>
 
@@ -127,6 +128,7 @@ TEST(PinholeCameraModel, 3dToPixelTo3dRay) {
 
   // init camera model
   irp::PinholeCameraModel model;
+  model.init("pinhole", ros::M_string(), ros::V_string());
   model.fromCameraInfo(camera_info);
 
   // perform test with random points
@@ -147,6 +149,7 @@ TEST(PinholeCameraModel, pixelTo3dRayToPixel) {
 
   // init camera model
   irp::PinholeCameraModel model;
+  model.init("pinhole", ros::M_string(), ros::V_string());
   model.fromCameraInfo(camera_info);
 
   // perform test with random pixels
@@ -166,11 +169,10 @@ TEST(FisheyeCameraModel, 3dToPixelTo3dRay) {
   camera_info.K[4] = 300.; // fy: K(1,1)
   camera_info.K[5] = 540.; // cy: K(1,2)
   camera_info.K[8] = 1.;   // K(2,2)
-  camera_info.D.resize(1);
-  camera_info.D[0] = 200. * M_PI / 180.; // fov
 
   // init camera model
   irp::FisheyeCameraModel model;
+  model.init("fisheye", ros::M_string(), ros::V_string());
   model.fromCameraInfo(camera_info);
 
   // perform test with random points
@@ -188,11 +190,10 @@ TEST(FisheyeCameraModel, pixelTo3dRayToPixel) {
   camera_info.K[4] = 300.;  // fy: K(1,1)
   camera_info.K[5] = 540.;  // cy: K(1,2)
   camera_info.K[8] = 1.;    // K(2,2)
-  camera_info.D.resize(1);
-  camera_info.D[0] = 200. * M_PI / 180.; // fov
 
   // init camera model
   irp::FisheyeCameraModel model;
+  model.init("fisheye", ros::M_string(), ros::V_string());
   model.fromCameraInfo(camera_info);
 
   // perform test with random pixels
@@ -203,5 +204,7 @@ TEST(FisheyeCameraModel, pixelTo3dRayToPixel) {
 
 int main(int argc, char *argv[]) {
   testing::InitGoogleTest(&argc, argv);
+  ros::init(argc, argv, "test_camera_models");
+  ros::NodeHandle nh;
   return RUN_ALL_TESTS();
 }

@@ -2,6 +2,8 @@
 
 #include <image_reprojection_plugins/MeshStamped.h>
 #include <image_reprojection_plugins/mesh_surface_model.hpp>
+#include <ros/init.h>
+#include <ros/node_handle.h>
 
 #include <opencv2/core/core.hpp>
 
@@ -71,6 +73,7 @@ void randomIntersection(const cv::Size &dsize, const irp::MeshStamped &mesh, cv:
 TEST(Intersection, random10000) {
   // initialize tested model with random mesh
   irp::MeshSurfaceModel model;
+  model.init("mesh", ros::M_string(), ros::V_string());
   const irp::MeshStamped mesh(randomMesh());
   model.update(mesh);
 
@@ -105,5 +108,7 @@ TEST(Intersection, random10000) {
 
 int main(int argc, char *argv[]) {
   testing::InitGoogleTest(&argc, argv);
+  ros::init(argc, argv, "test_mesh_surface_model");
+  ros::NodeHandle nh;
   return RUN_ALL_TESTS();
 }
