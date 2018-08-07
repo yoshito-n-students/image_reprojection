@@ -10,6 +10,9 @@
 
 #include <opencv2/core/core.hpp>
 
+#include <boost/thread/locks.hpp>
+#include <boost/thread/shared_mutex.hpp>
+
 namespace image_reprojection_plugins {
 
 class DEMSurfaceModel : public image_reprojection::SurfaceModel {
@@ -18,7 +21,21 @@ public:
 
   virtual ~DEMSurfaceModel() {}
 
-  void update(const nav_msgs::OccupancyGrid &dem) { frame_id_ = dem.header.frame_id; }
+  virtual void update(const topic_tools::ShapeShifter &surface) {
+    const nav_msgs::OccupancyGridConstPtr dem(surface.instantiate< nav_msgs::OccupancyGrid >());
+    CV_Assert(dem);
+    update(*dem);
+  }
+
+  void update(const nav_msgs::OccupancyGrid &dem) {
+    boost::unique_lock< boost::shared_mutex > write_lock(mutex_);
+    frame_id_ = dem.header.frame_id;
+  }
+
+  virtual std::string getFrameId() const {
+    boost::shared_lock< boost::shared_mutex > read_lock(mutex_);
+    return frame_id_;
+  }
 
 private:
   virtual void onInit() {
@@ -27,18 +44,13 @@ private:
     CV_Assert(pnh.getParam("max_data", max_data_));
   }
 
-  virtual void update(const topic_tools::ShapeShifter &surface) {
-    const nav_msgs::OccupancyGridConstPtr dem(surface.instantiate< nav_msgs::OccupancyGrid >());
-    CV_Assert(dem);
-    update(*dem);
+  virtual void onIntersection(const cv::Vec3f &src_origin, const cv::Mat &src_direction,
+                              cv::Mat &dst, cv::Mat &mask) const {
+    boost::shared_lock< boost::shared_mutex > read_lock(mutex_);
   }
 
-  virtual std::string getFrameId() const { return frame_id_; }
-
-  virtual void onIntersection(const cv::Vec3f &src_origin, const cv::Mat &src_direction,
-                              cv::Mat &dst, cv::Mat &mask) const {}
-
 private:
+  mutable boost::shared_mutex mutex_;
   double min_data_, max_data_;
   std::string frame_id_;
 };
