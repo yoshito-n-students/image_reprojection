@@ -6,12 +6,15 @@
 #include <vector>
 
 #include <image_reprojection/camera_model.hpp>
+#include <ros/node_handle.h>
 #include <sensor_msgs/CameraInfo.h>
 
 #include <opencv2/calib3d/calib3d.hpp> //for cv::Affine3d
 #include <opencv2/core/core.hpp>
 
 #include <boost/make_shared.hpp>
+#include <boost/thread/locks.hpp>
+#include <boost/thread/shared_mutex.hpp>
 
 namespace image_reprojection_plugins {
 
@@ -24,10 +27,9 @@ public:
   virtual void fromCameraInfo(const sensor_msgs::CameraInfo &camera_info) {
     // assert distortion type and number of distortion parameters
     CV_Assert(camera_info.distortion_model == "fisheye");
-    CV_Assert(camera_info.D.size() == 0 /* no distortion & fov */ ||
-              camera_info.D.size() == 1 /* fov only */ ||
-              camera_info.D.size() == 4 /* distortion only */ ||
-              camera_info.D.size() == 5 /* distortion & fov */);
+    CV_Assert(camera_info.D.empty() || camera_info.D.size() == 4);
+
+    boost::unique_lock< boost::shared_mutex > write_lock(mutex_);
 
     // copy entire camera info to return it via toCameraInfo()
     camera_info_ = camera_info;
@@ -58,29 +60,10 @@ public:
     }
 
     // copy distortion coefficients which are independent from image resolution
-    // (do not copy the last element of camera_info.D because it is field of view)
-    switch (camera_info.D.size()) {
-    case 0: /* no distortion & fov */
+    if (camera_info.D.empty()) {
       dist_coeffs_.resize(4, 0.);
-      fov_ = M_PI;
-      break;
-    case 1: /* fov only */
-      dist_coeffs_.resize(4, 0.);
-      fov_ = camera_info.D[0];
-      break;
-    case 4: /* distortion only */
+    } else {
       dist_coeffs_ = camera_info.D;
-      fov_ = M_PI;
-      break;
-    case 5: /* distortion & fov */
-      dist_coeffs_.assign(camera_info.D.begin(), camera_info.D.begin() + 4);
-      fov_ = camera_info.D[4];
-      break;
-    default: {
-      static const bool SHOULD_NOT_REACH_HERE_BUG(false);
-      CV_Assert(SHOULD_NOT_REACH_HERE_BUG);
-      break;
-    }
     }
 
     // copy image size info
@@ -91,13 +74,19 @@ public:
   }
 
   virtual sensor_msgs::CameraInfoPtr toCameraInfo() const {
+    boost::shared_lock< boost::shared_mutex > read_lock(mutex_);
     return boost::make_shared< sensor_msgs::CameraInfo >(camera_info_);
   }
 
 private:
-  virtual void onInit() {}
+  virtual void onInit() {
+    ros::NodeHandle &pnh(getPrivateNodeHandle());
+    fov_ = pnh.param("fov", M_PI);
+  }
 
   virtual void onProject3dToPixel(const cv::Mat &src, cv::Mat &dst, cv::Mat &mask) const {
+    boost::shared_lock< boost::shared_mutex > read_lock(mutex_);
+
     // allocate dst pixels
     dst.create(src.size(), CV_32FC2);
 
@@ -154,6 +143,8 @@ private:
   }
 
   virtual void onProjectPixelTo3dRay(const cv::Mat &src, cv::Mat &dst, cv::Mat &mask) const {
+    boost::shared_lock< boost::shared_mutex > read_lock(mutex_);
+
     // allocate dst points
     dst.create(src.size(), CV_32FC3);
 
@@ -219,7 +210,7 @@ private:
   }
 
 private:
-  // parameters
+  mutable boost::shared_mutex mutex_;
   sensor_msgs::CameraInfo camera_info_;
   cv::Matx33d camera_matrix_;
   std::vector< double > dist_coeffs_;

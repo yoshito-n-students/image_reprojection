@@ -13,6 +13,7 @@ namespace image_reprojection {
 /*
   base class of camera models which convert camera's optical and pixel coordinates.
   child class may throw std::exception from its overrode functions.
+  also, child class must be threadsafe.
 */
 class CameraModel : public nodelet::Nodelet {
 public:

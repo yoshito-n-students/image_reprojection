@@ -13,6 +13,8 @@
 #include <opencv2/imgproc/imgproc.hpp>
 
 #include <boost/make_shared.hpp>
+#include <boost/thread/locks.hpp>
+#include <boost/thread/shared_mutex.hpp>
 
 namespace image_reprojection_plugins {
 
@@ -29,6 +31,8 @@ public:
     CV_Assert(camera_info.D.size() == 0 || camera_info.D.size() == 4 || camera_info.D.size() == 5 ||
               camera_info.D.size() == 8 || camera_info.D.size() == 12 ||
               camera_info.D.size() == 14);
+
+    boost::unique_lock< boost::shared_mutex > write_lock(mutex_);
 
     // copy entire camera info to return it via toCameraInfo()
     camera_info_ = camera_info;
@@ -69,6 +73,7 @@ public:
   }
 
   virtual sensor_msgs::CameraInfoPtr toCameraInfo() const {
+    boost::shared_lock< boost::shared_mutex > read_lock(mutex_);
     return boost::make_shared< sensor_msgs::CameraInfo >(camera_info_);
   }
 
@@ -76,6 +81,8 @@ private:
   virtual void onInit() {}
 
   virtual void onProject3dToPixel(const cv::Mat &src, cv::Mat &dst, cv::Mat &mask) const {
+    boost::shared_lock< boost::shared_mutex > read_lock(mutex_);
+
     // project 3D points in the camera coordinate into the 2D image coordinate
     cv::projectPoints(src.reshape(3, src.total()), cv::Vec3d::all(0.), cv::Vec3d::all(0.),
                       camera_matrix_, dist_coeffs_, dst);
@@ -97,6 +104,8 @@ private:
   }
 
   virtual void onProjectPixelTo3dRay(const cv::Mat &src, cv::Mat &dst, cv::Mat &mask) const {
+    boost::shared_lock< boost::shared_mutex > read_lock(mutex_);
+
     // reproject 2D points in the image coordinate to the camera coordinate
     cv::Mat dst_2d;
     cv::undistortPoints(src.reshape(2, src.total()), dst_2d, camera_matrix_, dist_coeffs_);
@@ -123,6 +132,7 @@ private:
   }
 
 private:
+  mutable boost::shared_mutex mutex_;
   sensor_msgs::CameraInfo camera_info_;
   cv::Matx33d camera_matrix_;
   std::vector< double > dist_coeffs_;
