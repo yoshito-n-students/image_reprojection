@@ -9,6 +9,8 @@
 #include <topic_tools/shape_shifter.h>
 
 #include <boost/foreach.hpp>
+#include <boost/thread/locks.hpp>
+#include <boost/thread/shared_mutex.hpp>
 
 #include <opencv2/core/core.hpp>
 
@@ -20,7 +22,15 @@ public:
 
   virtual ~MeshSurfaceModel() {}
 
+  virtual void update(const topic_tools::ShapeShifter &surface) {
+    const MeshStampedConstPtr mesh(surface.instantiate< MeshStamped >());
+    CV_Assert(mesh);
+    update(*mesh);
+  }
+
   void update(const MeshStamped &mesh) {
+    boost::unique_lock< boost::shared_mutex > write_lock(mutex_);
+
     frame_id_ = mesh.header.frame_id;
 
     vertices_.clear();
@@ -35,19 +45,17 @@ public:
     }
   }
 
+  virtual std::string getFrameId() const {
+    boost::shared_lock< boost::shared_mutex > read_lock(mutex_);
+    return frame_id_;
+  }
+
 private:
   virtual void onInit() {}
 
-  virtual void update(const topic_tools::ShapeShifter &surface) {
-    const MeshStampedConstPtr mesh(surface.instantiate< MeshStamped >());
-    CV_Assert(mesh);
-    update(*mesh);
-  }
-
-  virtual std::string getFrameId() const { return frame_id_; }
-
   virtual void onIntersection(const cv::Vec3f &src_origin, const cv::Mat &src_direction,
                               cv::Mat &dst, cv::Mat &mask) const {
+    boost::shared_lock< boost::shared_mutex > read_lock(mutex_);
     multirayMeshIntersection(src_origin, src_direction, dst, mask);
   }
 
@@ -132,6 +140,7 @@ private:
   }
 
 private:
+  mutable boost::shared_mutex mutex_;
   std::string frame_id_;
   std::vector< cv::Vec3f > vertices_;
   std::vector< cv::Vec3i > triangles_;
