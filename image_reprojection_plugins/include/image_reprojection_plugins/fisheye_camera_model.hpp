@@ -80,6 +80,8 @@ public:
 
 private:
   virtual void onInit() {
+    boost::unique_lock< boost::shared_mutex > write_lock(mutex_);
+
     ros::NodeHandle &pnh(getPrivateNodeHandle());
     fov_ = pnh.param("fov", M_PI);
   }
@@ -211,11 +213,15 @@ private:
 
 private:
   mutable boost::shared_mutex mutex_;
+
+  // ros standard camera info
   sensor_msgs::CameraInfo camera_info_;
   cv::Matx33d camera_matrix_;
   std::vector< double > dist_coeffs_;
-  double fov_;
   cv::Rect_< float > frame_;
+
+  // additional info from rosparam
+  double fov_;
 };
 
 } // namespace image_reprojection_plugins
