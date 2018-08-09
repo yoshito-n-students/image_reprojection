@@ -9,6 +9,7 @@
 #include <cv_bridge/cv_bridge.h>
 #include <image_reprojection/camera_model.hpp>
 #include <image_reprojection/surface_model.hpp>
+#include <image_reprojection/transform.hpp>
 #include <image_transport/camera_publisher.h>
 #include <image_transport/camera_subscriber.h>
 #include <image_transport/image_transport.h>
@@ -286,13 +287,13 @@ private:
     dst_camera_model_->projectPixelTo3dRay(binned_map, ray_directions, binned_mask);
 
     // transform rays into surface coordinate frame
-    cv::Vec3f ray_origin(0., 0., 0.);
+    cv::Vec3f ray_origin;
     {
       tf::StampedTransform dst2surface;
       tf_listener_->lookupTransform(dst_camera_info->header.frame_id, surface_model_->getFrameId(),
                                     ros::Time(0), dst2surface);
-      transform(ray_origin, dst2surface);
-      transform(ray_directions, dst2surface, binned_mask);
+      ray_origin = transform(cv::Vec3f(0., 0., 0.), dst2surface);
+      ray_directions = transform(ray_directions, dst2surface.getBasis(), binned_mask);
     }
 
     // calculate mapping from ray to intersection point on surface
@@ -308,7 +309,7 @@ private:
       tf::StampedTransform surface2src;
       tf_listener_->lookupTransform(surface_model_->getFrameId(), src_camera_info->header.frame_id,
                                     ros::Time(0), surface2src);
-      transform(intersections, surface2src, binned_mask);
+      intersections = transform(intersections, surface2src, binned_mask);
     }
 
     // calculate mapping from points on surface to source pixels
@@ -332,26 +333,6 @@ private:
     // copy unmasked pixels of the temp image to the destination image
     dst = cv::Mat::zeros(map_.size(), src.type());
     tmp.copyTo(dst, mask_);
-  }
-
-  static void transform(cv::Vec3f &cv_vec, const tf::Transform &tf_transform) {
-    const tf::Vector3 tf_vec(tf_transform(tf::Vector3(cv_vec[0], cv_vec[1], cv_vec[2])));
-    cv_vec[0] = tf_vec[0];
-    cv_vec[1] = tf_vec[1];
-    cv_vec[2] = tf_vec[2];
-  }
-
-  static void transform(cv::Mat &cv_mat, const tf::Transform &tf_transform, const cv::Mat &mask) {
-    CV_Assert(cv_mat.type() == CV_32FC3);
-    CV_Assert(mask.type() == CV_8UC1);
-    CV_Assert(cv_mat.size() == mask.size());
-    for (int x = 0; x < cv_mat.size().width; ++x) {
-      for (int y = 0; y < cv_mat.size().height; ++y) {
-        if (mask.at< unsigned char >(y, x) != 0) {
-          transform(cv_mat.at< cv::Vec3f >(y, x), tf_transform);
-        }
-      }
-    }
   }
 
 private:
