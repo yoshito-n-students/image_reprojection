@@ -9,11 +9,11 @@
 
 int main(int argc, char *argv[]) {
   const cv::CommandLineParser args(argc, argv,
-                                   "{ help | | show help message}"
+                                   "{ help | | show help message }"
                                    "{ @file-name | <none> | output calibration file }"
                                    "{ @camera-name | <none> | camera name }"
                                    "{ width | | image width when calibrated }"
-                                   "{ height | | image width when calibrated }"
+                                   "{ height | | image height when calibrated }"
                                    "{ distortion-model | | distortion model }"
                                    "{ d-size | | number of distortion parameters }"
                                    "{ fx | | focal length x }"
@@ -21,7 +21,7 @@ int main(int argc, char *argv[]) {
                                    "{ cx | | principal point x }"
                                    "{ cy | | principal point y }");
 
-  // show help and exit on needed
+  // show help and exit as needed
   if (args.has("help")) {
     args.printMessage();
     return 0;
