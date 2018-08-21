@@ -82,7 +82,7 @@ private:
     {
       const image_transport::TransportHints default_hints;
       src_camera_subscriber_ =
-          it.subscribeCamera("src_camera0", 1, &ImageReprojection::onSrcCameraRecieved, this,
+          it.subscribeCamera("src_image0", 1, &ImageReprojection::onSrcCameraRecieved, this,
                              image_transport::TransportHints(default_hints.getTransport(),
                                                              default_hints.getRosHints(), pnh));
     }
@@ -137,7 +137,7 @@ private:
         nh.advertiseService("set_camera_info", &ImageReprojection::onDstCameraInfoSet, this);
 
     // setup the destination image publisher
-    dst_camera_publisher_ = it.advertiseCamera("dst_camera", 1, true);
+    dst_camera_publisher_ = it.advertiseCamera("dst_image", 1, true);
 
     // start publish timer
     {
