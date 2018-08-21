@@ -29,8 +29,6 @@
 #include <topic_tools/shape_shifter.h>
 
 #include <boost/scoped_ptr.hpp>
-#include <boost/thread/locks.hpp>
-#include <boost/thread/mutex.hpp>
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -304,16 +302,11 @@ private:
     src_camera_model_->project3dToPixel(intersections, binned_map, binned_mask);
 
     // write updated mapping between source and destination images
-    {
-      boost::lock_guard< boost::mutex > lock(mutex_);
-      cv::resize(binned_map, map_, dst_image_size);
-      cv::resize(binned_mask, mask_, dst_image_size);
-    }
+    cv::resize(binned_map, map_, dst_image_size);
+    cv::resize(binned_mask, mask_, dst_image_size);
   }
 
   void remap(const cv::Mat &src, cv::Mat &dst) {
-    boost::lock_guard< boost::mutex > lock(mutex_);
-
     // remap the source image to a temp image
     cv::Mat tmp;
     cv::remap(src, tmp, map_, cv::noArray(), cv::INTER_LINEAR);
@@ -348,7 +341,6 @@ private:
   boost::scoped_ptr< tf::TransformListener > tf_listener_;
   int map_binning_x_;
   int map_binning_y_;
-  boost::mutex mutex_;
   cv::Mat map_;
   cv::Mat mask_;
 };
