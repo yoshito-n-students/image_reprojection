@@ -1,6 +1,6 @@
 <library path="lib/libdem_surface_model_plugin">
   <class type="image_reprojection_plugins::DEMSurfaceModel"
-	 base_class_type="image_reprojection::SurfaceModel">
+	       base_class_type="image_reprojection::SurfaceModel">
     <description>
       Plugin calculating intersection with digital elevation map (DEM)
     </description>
