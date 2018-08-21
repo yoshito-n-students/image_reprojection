@@ -10,7 +10,7 @@
 #include <xmlrpcpp/XmlRpcException.h>
 #include <xmlrpcpp/XmlRpcValue.h>
 
-shape_msgs::MeshTriangle toTriangle(const XmlRpc::XmlRpcValue &src) {
+shape_msgs::MeshTriangle toMeshTriangle(const XmlRpc::XmlRpcValue &src) {
   if (src.size() != 3) {
     throw XmlRpc::XmlRpcException("number of indices (must be 3)");
   }
@@ -21,10 +21,10 @@ shape_msgs::MeshTriangle toTriangle(const XmlRpc::XmlRpcValue &src) {
   return dst;
 }
 
-std::vector< shape_msgs::MeshTriangle > toTriangles(const XmlRpc::XmlRpcValue &src) {
+std::vector< shape_msgs::MeshTriangle > toMeshTriangles(const XmlRpc::XmlRpcValue &src) {
   std::vector< shape_msgs::MeshTriangle > dst;
   for (int i = 0; i < src.size(); ++i) {
-    dst.push_back(toTriangle(src[i]));
+    dst.push_back(toMeshTriangle(src[i]));
   }
   return dst;
 }
@@ -56,7 +56,7 @@ int main(int argc, char *argv[]) {
 
   irp::MeshStamped mesh;
   mesh.header.frame_id = pnh.param< std::string >("frame_id", "");
-  mesh.mesh.triangles = toTriangles(pnh.param("triangles", XmlRpc::XmlRpcValue()));
+  mesh.mesh.triangles = toMeshTriangles(pnh.param("triangles", XmlRpc::XmlRpcValue()));
   mesh.mesh.vertices = toPoints(pnh.param("vertices", XmlRpc::XmlRpcValue()));
   ROS_INFO_STREAM(mesh);
 
