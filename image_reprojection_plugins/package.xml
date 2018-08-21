@@ -66,6 +66,6 @@
     <image_reprojection plugin="${prefix}/plugin_descriptions/dem_surface_model_plugin.xml" />
     <image_reprojection plugin="${prefix}/plugin_descriptions/fisheye_camera_model_plugin.xml" />
     <image_reprojection plugin="${prefix}/plugin_descriptions/mesh_surface_model_plugin.xml" />
-    <image_reprojection plugin="${prefix}/plugin_descriptions/ponhole_camera_model_plugin.xml" />
+    <image_reprojection plugin="${prefix}/plugin_descriptions/pinhole_camera_model_plugin.xml" />
   </export>
 </package>
