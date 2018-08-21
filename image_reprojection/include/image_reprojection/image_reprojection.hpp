@@ -76,8 +76,8 @@ private:
       std::string type;
       CV_Assert(pnh.getParam("src_camera0/model", type));
       src_camera_model_ = camera_model_loader_.createInstance(type);
-      src_camera_model_->init(pnh.resolveName("src_camera0") + "(" + type + ")", ros::M_string(),
-                              getMyArgv(), &getSTCallbackQueue(), &getMTCallbackQueue());
+      src_camera_model_->init(pnh.resolveName("src_camera0"), ros::M_string(), getMyArgv(),
+                              &getSTCallbackQueue(), &getMTCallbackQueue());
     }
 
     // subscribe src camera
@@ -98,8 +98,8 @@ private:
       std::string type;
       CV_Assert(pnh.getParam("surface/model", type));
       surface_model_ = surface_model_loader_.createInstance(type);
-      surface_model_->init(pnh.resolveName("surface") + "(" + type + ")", ros::M_string(),
-                           getMyArgv(), &getSTCallbackQueue(), &getMTCallbackQueue());
+      surface_model_->init(pnh.resolveName("surface"), ros::M_string(), getMyArgv(),
+                           &getSTCallbackQueue(), &getMTCallbackQueue());
     }
 
     // setup the surface subscriber
@@ -121,17 +121,16 @@ private:
       std::string type;
       CV_Assert(pnh.getParam("dst_camera/model", type));
       dst_camera_model_ = camera_model_loader_.createInstance(type);
-      dst_camera_model_->init(pnh.resolveName("dst_camera") + "(" + type + ")", ros::M_string(),
-                              getMyArgv(), &getSTCallbackQueue(), &getMTCallbackQueue());
+      dst_camera_model_->init(pnh.resolveName("dst_camera"), ros::M_string(), getMyArgv(),
+                              &getSTCallbackQueue(), &getMTCallbackQueue());
     }
 
     // init dst camera model
     {
-      std::string info_file, name;
+      std::string info_file;
       CV_Assert(pnh.getParam("dst_camera/info_file", info_file));
-      CV_Assert(pnh.getParam("dst_camera/name", name));
       sensor_msgs::CameraInfo info;
-      CV_Assert(camera_calibration_parsers::readCalibration(info_file, name, info));
+      CV_Assert(camera_calibration_parsers::readCalibration(info_file, info.header.frame_id, info));
       dst_camera_model_->fromCameraInfo(info);
     }
 
