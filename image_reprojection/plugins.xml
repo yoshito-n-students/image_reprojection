@@ -1,0 +1,8 @@
+<library path="lib/libimage_reprojection">
+  <class name="image_reprojection/ImageReprojection" type="image_reprojection::ImageReprojection" 
+         base_class_type="nodelet::Nodelet">
+    <description>
+      Reproject images
+    </description>
+  </class>
+</library>

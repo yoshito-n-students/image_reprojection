@@ -111,7 +111,7 @@ find_package(
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
   INCLUDE_DIRS include
-#  LIBRARIES image_reprojection
+  LIBRARIES image_reprojection
   CATKIN_DEPENDS 
   camera_calibration_parsers
   cv_bridge 
@@ -135,12 +135,13 @@ catkin_package(
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
-  )
+)
 
 ## Declare a C++ library
-# add_library(image_reprojection
-#   src/${PROJECT_NAME}/image_reprojection.cpp
-# )
+add_library(
+  image_reprojection
+  src/image_reprojection.cpp
+)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -148,10 +149,6 @@ include_directories(
 # add_dependencies(image_reprojection ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Declare a C++ executable
-add_executable(
-  image_reprojection_node
-  src/image_reprojection_node.cpp
-)
 add_executable(
   generate_calibration_file
   src/generate_calibration_file.cpp
@@ -163,8 +160,7 @@ add_executable(
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(
-  image_reprojection_node
-  rt
+  image_reprojection
   ${catkin_LIBRARIES}
   ${OpenCV_LIBRARIES}
 )
