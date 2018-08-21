@@ -81,10 +81,10 @@ private:
     // subscribe src camera
     {
       const image_transport::TransportHints default_hints;
-      src_camera_subscriber_ =
-          it.subscribeCamera("src_image0", 1, &ImageReprojection::onSrcCameraRecieved, this,
-                             image_transport::TransportHints(default_hints.getTransport(),
-                                                             default_hints.getRosHints(), pnh));
+      src_camera_subscriber_ = it.subscribeCamera(
+          "src_image0", 1, &ImageReprojection::onSrcCameraRecieved, this,
+          image_transport::TransportHints(default_hints.getTransport(), default_hints.getRosHints(),
+                                          ros::NodeHandle(pnh, "src_camera0")));
     }
 
     //
