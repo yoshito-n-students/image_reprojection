@@ -156,17 +156,6 @@ private:
     }
   }
 
-  static cv::Size sizeParam(ros::NodeHandle &pnh, const std::string &key,
-                            const cv::Size &default_val) {
-    std::vector< int > val;
-    if (pnh.getParam(key, val)) {
-      if (val.size() == 2) {
-        return cv::Size(val[0], val[1]);
-      }
-    }
-    return default_val;
-  }
-
   //
   // passive event handlers
   //
