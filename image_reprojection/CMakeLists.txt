@@ -21,6 +21,7 @@ find_package(
 find_package(
   OpenCV REQUIRED COMPONENTS 
   core
+  imgproc
 )
 
 
