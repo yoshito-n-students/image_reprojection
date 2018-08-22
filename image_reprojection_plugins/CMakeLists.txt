@@ -6,6 +6,7 @@ project(image_reprojection_plugins)
 ## is used, also find other catkin packages
 find_package(
   catkin REQUIRED COMPONENTS
+  camera_info_manager
   cv_bridge
   image_reprojection
   message_generation
@@ -14,6 +15,7 @@ find_package(
   roscpp
   shape_msgs
   std_msgs
+  nodelet
   tf
   )
 
@@ -121,6 +123,7 @@ catkin_package(
   mesh_surface_model_plugin
   pinhole_camera_model_plugin
   CATKIN_DEPENDS 
+  camera_info_manager
   cv_bridge 
   image_reprojection 
   message_runtime
@@ -129,6 +132,8 @@ catkin_package(
   roscpp 
   shape_msgs
   std_msgs
+  nodelet
+  tf
 #  DEPENDS system_lib
 )
 
@@ -161,7 +166,10 @@ add_library(
   dem_surface_model_plugin
   src/dem_surface_model_plugin.cpp
 )
-
+add_library(
+  dual_fisheye_splitter
+  src/dual_fisheye_splitter.cpp
+)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -204,6 +212,10 @@ target_link_libraries(
   dem_surface_model_plugin
   ${catkin_LIBRARIES}
   ${OpenCV_LIBRARIES}
+)
+target_link_libraries(
+  dual_fisheye_splitter
+  ${catkin_LIBRARIES}
 )
 target_link_libraries(
   static_mesh_publisher
