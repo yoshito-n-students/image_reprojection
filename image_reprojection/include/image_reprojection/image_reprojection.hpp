@@ -43,13 +43,13 @@ public:
 
   virtual ~ImageReprojection() {
     // stop using plugins
-    src_camera_subscriber_.shutdown();
+    src_camera_subscribers_.clear();
     surface_subscriber_.shutdown();
     dst_camera_info_server_.shutdown();
     map_timer_.stop();
 
     // destroy all plugins before destroying loaders
-    src_camera_model_.reset();
+    src_camera_models_.clear();
     surface_model_.reset();
     dst_camera_model_.reset();
   }
@@ -69,23 +69,36 @@ private:
     // src camera (TODO: multiple src cameras)
     //
 
-    // load src camera model instance
-    {
-      std::string type;
-      CV_Assert(pnh.getParam("src_camera0/model", type));
-      src_camera_model_ = camera_model_loader_.createInstance(type);
-      src_camera_model_->init(pnh.resolveName("src_camera0"), ros::M_string(), getMyArgv(),
-                              &getSTCallbackQueue(), &getMTCallbackQueue());
-    }
+    for (int i = 0; true; ++i) {
+      const std::string i_str(boost::lexical_cast< std::string >(i));
+      if (!pnh.hasParam("src_camera" + i_str + "/model")) {
+        break;
+      }
 
-    // subscribe src camera
-    {
-      const image_transport::TransportHints default_hints;
-      src_camera_subscriber_ = it.subscribeCamera(
-          "src_image0", 1, &ImageReprojection::onSrcCameraRecieved, this,
-          image_transport::TransportHints(default_hints.getTransport(), default_hints.getRosHints(),
-                                          ros::NodeHandle(pnh, "src_camera0")));
+      // load src camera model instance
+      {
+        std::string type;
+        pnh.getParam("src_camera" + i_str + "/model", type);
+        src_camera_models_.push_back(camera_model_loader_.createInstance(type));
+        src_camera_models_.back()->init(pnh.resolveName("src_camera" + i_str), ros::M_string(),
+                                        getMyArgv(), &getSTCallbackQueue(), &getMTCallbackQueue());
+      }
+
+      // prepare src image storage
+      src_images_.push_back(cv_bridge::CvImageConstPtr());
+
+      // subscribe src camera
+      {
+        const image_transport::TransportHints default_hints;
+        src_camera_subscribers_.push_back(it.subscribeCamera(
+            "src_image" + i_str, 1,
+            boost::bind(&ImageReprojection::onSrcCameraRecieved, this, _1, _2, i), ros::VoidPtr(),
+            image_transport::TransportHints(default_hints.getTransport(),
+                                            default_hints.getRosHints(),
+                                            ros::NodeHandle(pnh, "src_camera" + i_str))));
+      }
     }
+    CV_Assert(src_camera_models_.size() > 0);
 
     //
     // surface
@@ -159,15 +172,15 @@ private:
   //
 
   void onSrcCameraRecieved(const sensor_msgs::ImageConstPtr &src_image,
-                           const sensor_msgs::CameraInfoConstPtr &src_camera_info) {
+                           const sensor_msgs::CameraInfoConstPtr &src_camera_info, const int i) {
     try {
       // update source camera model
-      src_camera_model_->fromCameraInfo(*src_camera_info);
+      src_camera_models_[i]->fromCameraInfo(*src_camera_info);
 
       // convert the ROS source image to an opencv image
-      src_image_ = cv_bridge::toCvShare(*src_image, src_image);
+      src_images_[i] = cv_bridge::toCvShare(*src_image, src_image);
     } catch (const std::exception &ex) {
-      ROS_ERROR_STREAM("onSrcRecieved: " << ex.what());
+      ROS_ERROR_STREAM("onSrcCameraRecieved(" << i << "): " << ex.what());
     }
   }
 
@@ -209,10 +222,10 @@ private:
 
       // prepare the destination image
       cv_bridge::CvImage dst_image;
-      CV_Assert(src_image_);
-      dst_image.header.stamp = src_image_->header.stamp;
+      CV_Assert(src_images_[0]);
+      dst_image.header.stamp = src_images_[0]->header.stamp;
       dst_image.header.frame_id = dst_camera_info->header.frame_id;
-      dst_image.encoding = src_image_->encoding;
+      dst_image.encoding = src_images_[0]->encoding;
 
       if (do_update_map) {
         // update mapping between the source and destination images
@@ -223,7 +236,7 @@ private:
       }
 
       // fill the destination image by remapping the source image
-      remap(src_image_->image, dst_image.image);
+      remap(src_images_[0]->image, dst_image.image);
 
       // publish the destination image
       dst_camera_publisher_.publish(dst_image.toImageMsg(), dst_camera_info);
@@ -291,7 +304,7 @@ private:
 
     // transform intersection points into camera frame
     {
-      const sensor_msgs::CameraInfoConstPtr src_camera_info(src_camera_model_->toCameraInfo());
+      const sensor_msgs::CameraInfoConstPtr src_camera_info(src_camera_models_[0]->toCameraInfo());
       CV_Assert(src_camera_info);
       tf::StampedTransform surface2src;
       tf_listener_->lookupTransform(/* to */ src_camera_info->header.frame_id,
@@ -301,7 +314,7 @@ private:
     }
 
     // calculate mapping from points on surface to source pixels
-    src_camera_model_->project3dToPixel(intersections, binned_map, binned_mask);
+    src_camera_models_[0]->project3dToPixel(intersections, binned_map, binned_mask);
 
     // write updated mapping between source and destination images
     cv::resize(binned_map, map_, dst_image_size);
@@ -323,10 +336,10 @@ private:
   pluginlib::ClassLoader< CameraModel > camera_model_loader_;
   pluginlib::ClassLoader< SurfaceModel > surface_model_loader_;
 
-  // src camera
-  image_transport::CameraSubscriber src_camera_subscriber_;
-  CameraModelPtr src_camera_model_;
-  cv_bridge::CvImageConstPtr src_image_;
+  // src cameras
+  std::vector< image_transport::CameraSubscriber > src_camera_subscribers_;
+  std::vector< CameraModelPtr > src_camera_models_;
+  std::vector< cv_bridge::CvImageConstPtr > src_images_;
 
   // surface
   ros::Subscriber surface_subscriber_;
