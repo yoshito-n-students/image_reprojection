@@ -276,8 +276,9 @@ private:
     cv::Vec3f ray_origin;
     {
       tf::StampedTransform dst2surface;
-      tf_listener_->lookupTransform(dst_camera_info->header.frame_id, surface_model_->getFrameId(),
-                                    ros::Time(0), dst2surface);
+      tf_listener_->lookupTransform(/* to */ surface_model_->getFrameId(),
+                                    /* from */ dst_camera_info->header.frame_id,
+                                    /* at latest time */ ros::Time(0), dst2surface);
       ray_origin = transform(cv::Vec3f(0., 0., 0.), dst2surface);
       ray_directions = transform(ray_directions, dst2surface.getBasis(), binned_mask);
     }
@@ -293,8 +294,9 @@ private:
       const sensor_msgs::CameraInfoConstPtr src_camera_info(src_camera_model_->toCameraInfo());
       CV_Assert(src_camera_info);
       tf::StampedTransform surface2src;
-      tf_listener_->lookupTransform(surface_model_->getFrameId(), src_camera_info->header.frame_id,
-                                    ros::Time(0), surface2src);
+      tf_listener_->lookupTransform(/* to */ src_camera_info->header.frame_id,
+                                    /* from */ surface_model_->getFrameId(),
+                                    /* at latest time */ ros::Time(0), surface2src);
       intersections = transform(intersections, surface2src, binned_mask);
     }
 
