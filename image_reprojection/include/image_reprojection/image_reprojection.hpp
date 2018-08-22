@@ -21,10 +21,12 @@
 #include <ros/rate.h>
 #include <ros/service_server.h>
 #include <ros/subscriber.h>
+#include <ros/time.h>
 #include <ros/timer.h>
 #include <sensor_msgs/CameraInfo.h>
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/SetCameraInfo.h>
+#include <sensor_msgs/image_encodings.h>
 #include <tf/transform_listener.h>
 #include <topic_tools/shape_shifter.h>
 
@@ -86,6 +88,8 @@ private:
 
       // prepare src image storage
       src_images_.push_back(cv_bridge::CvImageConstPtr());
+      maps_.push_back(cv::Mat());
+      masks_.push_back(cv::Mat());
 
       // subscribe src camera
       {
@@ -121,6 +125,8 @@ private:
     //
 
     // load parameters
+    dst_image_encoding_ =
+        pnh.param< std::string >("dst_camera/encoding", sensor_msgs::image_encodings::BGR8);
     map_binning_x_ = pnh.param("map_update/binning_x", 5);
     map_binning_y_ = pnh.param("map_update/binning_y", 5);
 
@@ -178,7 +184,7 @@ private:
       src_camera_models_[i]->fromCameraInfo(*src_camera_info);
 
       // convert the ROS source image to an opencv image
-      src_images_[i] = cv_bridge::toCvShare(*src_image, src_image);
+      src_images_[i] = cv_bridge::toCvShare(src_image, dst_image_encoding_);
     } catch (const std::exception &ex) {
       ROS_ERROR_STREAM("onSrcCameraRecieved(" << i << "): " << ex.what());
     }
@@ -222,10 +228,12 @@ private:
 
       // prepare the destination image
       cv_bridge::CvImage dst_image;
-      CV_Assert(src_images_[0]);
-      dst_image.header.stamp = src_images_[0]->header.stamp;
+      dst_image.header.stamp = ros::Time::now();
       dst_image.header.frame_id = dst_camera_info->header.frame_id;
-      dst_image.encoding = src_images_[0]->encoding;
+      dst_image.encoding = dst_image_encoding_;
+      CV_Assert(maps_[0].total() > 0);
+      CV_Assert(src_images_[0]);
+      dst_image.image = cv::Mat::zeros(maps_[0].size(), src_images_[0]->image.type());
 
       if (do_update_map) {
         // update mapping between the source and destination images
@@ -236,7 +244,16 @@ private:
       }
 
       // fill the destination image by remapping the source image
-      remap(src_images_[0]->image, dst_image.image);
+      for (int i = 0; i < src_images_.size(); ++i) {
+        if (!src_images_[i]) {
+          continue;
+        }
+        // remap the source image to a temp image
+        cv::Mat tmp;
+        cv::remap(src_images_[i]->image, tmp, maps_[i], cv::noArray(), cv::INTER_LINEAR);
+        // copy unmasked pixels of the temp image to the destination image
+        tmp.copyTo(dst_image.image, masks_[i]);
+      }
 
       // publish the destination image
       dst_camera_publisher_.publish(dst_image.toImageMsg(), dst_camera_info);
@@ -302,33 +319,29 @@ private:
 
     // TODO: check intersection points are visible from src camera origin using the surface model
 
-    // transform intersection points into camera frame
-    {
-      const sensor_msgs::CameraInfoConstPtr src_camera_info(src_camera_models_[0]->toCameraInfo());
-      CV_Assert(src_camera_info);
-      tf::StampedTransform surface2src;
-      tf_listener_->lookupTransform(/* to */ src_camera_info->header.frame_id,
-                                    /* from */ surface_model_->getFrameId(),
-                                    /* at latest time */ ros::Time(0), surface2src);
-      intersections = transform(intersections, surface2src, binned_mask);
+    for (int i = 0; i < src_camera_models_.size(); ++i) {
+      // transform intersection points into source camera frame
+      cv::Mat intersections_i;
+      cv::Mat binned_mask_i(binned_mask.clone());
+      {
+        const sensor_msgs::CameraInfoConstPtr src_camera_info_i(
+            src_camera_models_[i]->toCameraInfo());
+        CV_Assert(src_camera_info_i);
+        tf::StampedTransform surface2src_i;
+        tf_listener_->lookupTransform(/* to */ src_camera_info_i->header.frame_id,
+                                      /* from */ surface_model_->getFrameId(),
+                                      /* at latest time */ ros::Time(0), surface2src_i);
+        intersections_i = transform(intersections, surface2src_i, binned_mask_i);
+      }
+
+      // calculate mapping from points on surface to source pixels
+      cv::Mat binned_map_i(binned_map.clone());
+      src_camera_models_[i]->project3dToPixel(intersections_i, binned_map_i, binned_mask_i);
+
+      // write updated mapping between source and destination images
+      cv::resize(binned_map_i, maps_[i], dst_image_size);
+      cv::resize(binned_mask_i, masks_[i], dst_image_size);
     }
-
-    // calculate mapping from points on surface to source pixels
-    src_camera_models_[0]->project3dToPixel(intersections, binned_map, binned_mask);
-
-    // write updated mapping between source and destination images
-    cv::resize(binned_map, map_, dst_image_size);
-    cv::resize(binned_mask, mask_, dst_image_size);
-  }
-
-  void remap(const cv::Mat &src, cv::Mat &dst) {
-    // remap the source image to a temp image
-    cv::Mat tmp;
-    cv::remap(src, tmp, map_, cv::noArray(), cv::INTER_LINEAR);
-
-    // copy unmasked pixels of the temp image to the destination image
-    dst = cv::Mat::zeros(map_.size(), src.type());
-    tmp.copyTo(dst, mask_);
   }
 
 private:
@@ -350,14 +363,15 @@ private:
   CameraModelPtr dst_camera_model_;
   image_transport::CameraPublisher dst_camera_publisher_;
   ros::Timer dst_camera_timer_;
+  std::string dst_image_encoding_;
 
   // mapping between src and dst image pixels
   ros::Timer map_timer_;
   boost::scoped_ptr< tf::TransformListener > tf_listener_;
   int map_binning_x_;
   int map_binning_y_;
-  cv::Mat map_;
-  cv::Mat mask_;
+  std::vector< cv::Mat > maps_;
+  std::vector< cv::Mat > masks_;
 };
 
 } // namespace image_reprojection
