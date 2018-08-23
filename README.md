@@ -46,13 +46,12 @@ set_dst_camera_info (sensor_msgs/SetCameraInfo)
 
 ~dst_camera/encoding (string, default: "bgr8")
 * desired encoding of destination camera image
-* encoding of source camera image must be compatible with this encoding
+* conversion from encoding of source camera image to this encoding must be possible
 
 ~dst_camera/fps (double, default: 16.0)
 * rate of destination camera image/info publishment
 
 ~map_update/background (bool, default: false)
-* how to update mapping between each source image and destination image
 * map update will be done in background if true, or in every reprojection of destination image if false
 * try true when desired fps is not realized as map update is most time consuming part of the algoritm
 
