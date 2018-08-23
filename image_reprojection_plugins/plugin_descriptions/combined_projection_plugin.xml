@@ -1,8 +1,0 @@
-<library path="lib/libcombined_projection_plugin">
-  <class type="image_reprojection_plugins::CombinedProjection"
-	 base_class_type="image_reprojection::ProjectionInterface">
-    <description>
-      This is a projection plugin that performs combined projection
-    </description>
-  </class>
-</library>

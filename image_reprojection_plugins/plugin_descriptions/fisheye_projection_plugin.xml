@@ -1,8 +1,0 @@
-<library path="lib/libfisheye_projection_plugin">
-  <class type="image_reprojection_plugins::FisheyeProjection"
-	 base_class_type="image_reprojection::ProjectionInterface">
-    <description>
-      This is a projection plugin that performs fisheye projection
-    </description>
-  </class>
-</library>

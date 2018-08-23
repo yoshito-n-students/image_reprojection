@@ -40,27 +40,30 @@
   <!-- Use test_depend for packages you need only for testing: -->
   <!--   <test_depend>gtest</test_depend> -->
   <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>camera_calibration_parsers</build_depend>
   <build_depend>cv_bridge</build_depend>
   <build_depend>image_transport</build_depend>
-  <build_depend>interprocess_utilities</build_depend>
   <build_depend>nodelet</build_depend>
-  <build_depend>param_utilities</build_depend>
   <build_depend>pluginlib</build_depend>
   <build_depend>roscpp</build_depend>
   <build_depend>sensor_msgs</build_depend>
+  <build_depend>tf</build_depend>
+  <build_depend>topic_tools</build_depend>
+  <run_depend>camera_calibration_parsers</run_depend>
   <run_depend>cv_bridge</run_depend>
   <run_depend>image_transport</run_depend>
-  <run_depend>interprocess_utilities</run_depend>
   <run_depend>nodelet</run_depend>
-  <run_depend>param_utilities</run_depend>
   <run_depend>pluginlib</run_depend>
   <run_depend>roscpp</run_depend>
   <run_depend>sensor_msgs</run_depend>
+  <run_depend>tf</run_depend>
+  <run_depend>topic_tools</run_depend>
 
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>
     <!-- Other tools can request additional information be placed here -->
+    <nodelet plugin="${prefix}/plugins.xml" />
 
   </export>
 </package>

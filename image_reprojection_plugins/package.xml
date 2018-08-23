@@ -40,34 +40,37 @@
   <!-- Use test_depend for packages you need only for testing: -->
   <!--   <test_depend>gtest</test_depend> -->
   <buildtool_depend>catkin</buildtool_depend>
-  <build_depend>cv_extension</build_depend>
+  <build_depend>camera_info_manager</build_depend>
+  <build_depend>cv_bridge</build_depend>
   <build_depend>image_reprojection</build_depend>
-  <build_depend>param_utilities</build_depend>
+  <build_depend>message_generation</build_depend>
+  <build_depend>nav_msgs</build_depend>
   <build_depend>pluginlib</build_depend>
   <build_depend>roscpp</build_depend>
+  <build_depend>shape_msgs</build_depend>
   <build_depend>std_msgs</build_depend>
+  <build_depend>nodelet</build_depend>
   <build_depend>tf</build_depend>
-  <run_depend>cv_extension</run_depend>
+  <run_depend>camera_info_manager</run_depend>
+  <run_depend>cv_bridge</run_depend>
   <run_depend>image_reprojection</run_depend>
-  <run_depend>param_utilities</run_depend>
+  <run_depend>message_runtime</run_depend>
+  <run_depend>nav_msgs</run_depend>
   <run_depend>pluginlib</run_depend>
   <run_depend>roscpp</run_depend>
+  <run_depend>shape_msgs</run_depend>
   <run_depend>std_msgs</run_depend>
+  <run_depend>nodelet</run_depend>
   <run_depend>tf</run_depend>
 
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>
     <!-- Other tools can request additional information be placed here -->
-    <!-- Projection plugins -->
-    <image_reprojection plugin="${prefix}/plugin_descriptions/combined_projection_plugin.xml" />
-    <image_reprojection plugin="${prefix}/plugin_descriptions/fisheye_projection_plugin.xml" />
-    <image_reprojection plugin="${prefix}/plugin_descriptions/no_projection_plugin.xml" />
-    <image_reprojection plugin="${prefix}/plugin_descriptions/standard_projection_plugin.xml" />
-    <!-- Transform plugins -->
-    <image_reprojection plugin="${prefix}/plugin_descriptions/combined_transform_plugin.xml" />
-    <image_reprojection plugin="${prefix}/plugin_descriptions/no_transform_plugin.xml" />
-    <image_reprojection plugin="${prefix}/plugin_descriptions/rotation_transform_plugin.xml" />
-    <image_reprojection plugin="${prefix}/plugin_descriptions/tf_transform_plugin.xml" />
+    <nodelet plugin="${prefix}/plugin_descriptions/dual_fisheye_splitter.xml" />
+    <image_reprojection plugin="${prefix}/plugin_descriptions/dem_surface_model_plugin.xml" />
+    <image_reprojection plugin="${prefix}/plugin_descriptions/fisheye_camera_model_plugin.xml" />
+    <image_reprojection plugin="${prefix}/plugin_descriptions/mesh_surface_model_plugin.xml" />
+    <image_reprojection plugin="${prefix}/plugin_descriptions/pinhole_camera_model_plugin.xml" />
   </export>
 </package>

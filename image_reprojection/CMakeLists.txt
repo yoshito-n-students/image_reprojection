@@ -6,18 +6,23 @@ project(image_reprojection)
 ## is used, also find other catkin packages
 find_package(
   catkin REQUIRED COMPONENTS
+  camera_calibration_parsers
   cv_bridge
   image_transport
-  interprocess_utilities
   nodelet
-  param_utilities
   pluginlib
   roscpp
   sensor_msgs
+  tf
+  topic_tools
   )
 
 ## System dependencies are found with CMake's conventions
-# find_package(Boost REQUIRED COMPONENTS system)
+find_package(
+  OpenCV REQUIRED COMPONENTS 
+  core
+  imgproc
+)
 
 
 ## Uncomment this if the package has a setup.py. This macro ensures
@@ -107,8 +112,17 @@ find_package(
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
   INCLUDE_DIRS include
-#  LIBRARIES image_reprojection
-CATKIN_DEPENDS cv_bridge image_transport interprocess_utilities nodelet param_utilities pluginlib roscpp sensor_msgs
+  LIBRARIES image_reprojection
+  CATKIN_DEPENDS 
+  camera_calibration_parsers
+  cv_bridge 
+  image_transport 
+  nodelet 
+  pluginlib 
+  roscpp 
+  sensor_msgs 
+  tf 
+  topic_tools
 #  DEPENDS system_lib
 )
 
@@ -122,12 +136,13 @@ CATKIN_DEPENDS cv_bridge image_transport interprocess_utilities nodelet param_ut
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
-  )
+)
 
 ## Declare a C++ library
-# add_library(image_reprojection
-#   src/${PROJECT_NAME}/image_reprojection.cpp
-# )
+add_library(
+  image_reprojection
+  src/image_reprojection.cpp
+)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -136,9 +151,9 @@ include_directories(
 
 ## Declare a C++ executable
 add_executable(
-  image_reprojection_node
-  src/image_reprojection_node.cpp
-  )
+  generate_calibration_file
+  src/generate_calibration_file.cpp
+)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
@@ -146,10 +161,15 @@ add_executable(
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(
-  image_reprojection_node
-  rt
+  image_reprojection
   ${catkin_LIBRARIES}
-  )
+  ${OpenCV_LIBRARIES}
+)
+target_link_libraries(
+  generate_calibration_file
+  ${catkin_LIBRARIES}
+  ${OpenCV_LIBRARIES}
+)
 
 #############
 ## Install ##

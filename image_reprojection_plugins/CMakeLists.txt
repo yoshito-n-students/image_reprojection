@@ -6,12 +6,16 @@ project(image_reprojection_plugins)
 ## is used, also find other catkin packages
 find_package(
   catkin REQUIRED COMPONENTS
-  cv_extension
+  camera_info_manager
+  cv_bridge
   image_reprojection
-  param_utilities
+  message_generation
+  nav_msgs
   pluginlib
   roscpp
+  shape_msgs
   std_msgs
+  nodelet
   tf
   )
 
@@ -57,11 +61,10 @@ find_package(
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
-# )
+add_message_files(
+  FILES
+  MeshStamped.msg
+)
 
 ## Generate services in the 'srv' folder
 # add_service_files(
@@ -78,10 +81,11 @@ find_package(
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   std_msgs  # Or other packages containing msgs
-# )
+generate_messages(
+  DEPENDENCIES
+  shape_msgs
+  std_msgs
+)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -115,9 +119,21 @@ find_package(
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES 
-  combined_projection_plugin fisheye_projection_plugin no_projection_plugin standard_projection_plugin 
-  combined_transform_plugin no_transform_plugin rotation_transform_plugin tf_transform_plugin
-  CATKIN_DEPENDS image_reprojection param_utilities pluginlib roscpp std_msgs
+  fisheye_camera_model_plugin
+  mesh_surface_model_plugin
+  pinhole_camera_model_plugin
+  CATKIN_DEPENDS 
+  camera_info_manager
+  cv_bridge 
+  image_reprojection 
+  message_runtime
+  nav_msgs 
+  pluginlib 
+  roscpp 
+  shape_msgs
+  std_msgs
+  nodelet
+  tf
 #  DEPENDS system_lib
 )
 
@@ -135,92 +151,76 @@ include_directories(
 
 ## Declare a C++ library
 add_library(
-  combined_projection_plugin
-  src/combined_projection_plugin.cpp
-  )
+  pinhole_camera_model_plugin
+  src/pinhole_camera_model_plugin.cpp
+)
 add_library(
-  fisheye_projection_plugin
-  src/fisheye_projection_plugin.cpp
-  )
+  fisheye_camera_model_plugin
+  src/fisheye_camera_model_plugin.cpp
+)
 add_library(
-  no_projection_plugin
-  src/no_projection_plugin.cpp
-  )
+  mesh_surface_model_plugin
+  src/mesh_surface_model_plugin.cpp
+)
 add_library(
-  standard_projection_plugin
-  src/standard_projection_plugin.cpp
-  )
+  dem_surface_model_plugin
+  src/dem_surface_model_plugin.cpp
+)
 add_library(
-  combined_transform_plugin
-  src/combined_transform_plugin.cpp
-  )
-add_library(
-  no_transform_plugin
-  src/no_transform_plugin.cpp
-  )
-add_library(
-  rotation_transform_plugin
-  src/rotation_transform_plugin.cpp
-  )
-add_library(
-  tf_transform_plugin
-  src/tf_transform_plugin.cpp
-  )
-  
+  dual_fisheye_splitter
+  src/dual_fisheye_splitter.cpp
+)
+
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
 ## either from message generation or dynamic reconfigure
-# add_dependencies(image_reprojection_plugins ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(
+  mesh_surface_model_plugin
+  ${image_reprojection_plugins_EXPORTED_TARGETS} 
+)
 
 ## Declare a C++ executable
-# add_executable(image_reprojection_plugins_node src/image_reprojection_plugins_node.cpp)
+add_executable(
+  static_mesh_publisher 
+  src/static_mesh_publisher.cpp
+)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
-# add_dependencies(image_reprojection_plugins_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(
+  static_mesh_publisher 
+  ${image_reprojection_plugins_EXPORTED_TARGETS} 
+)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(
-  combined_projection_plugin
+  pinhole_camera_model_plugin
   ${catkin_LIBRARIES}
   ${OpenCV_LIBRARIES}
-  )
+)
 target_link_libraries(
-  fisheye_projection_plugin
+  fisheye_camera_model_plugin
   ${catkin_LIBRARIES}
   ${OpenCV_LIBRARIES}
-  )
+)
 target_link_libraries(
-  no_projection_plugin
+  mesh_surface_model_plugin
   ${catkin_LIBRARIES}
   ${OpenCV_LIBRARIES}
-  )
+)
 target_link_libraries(
-  standard_projection_plugin
+  dem_surface_model_plugin
   ${catkin_LIBRARIES}
   ${OpenCV_LIBRARIES}
-  )
+)
 target_link_libraries(
-  combined_transform_plugin
+  dual_fisheye_splitter
   ${catkin_LIBRARIES}
-  ${OpenCV_LIBRARIES}
-  )
+)
 target_link_libraries(
-  no_transform_plugin
+  static_mesh_publisher
   ${catkin_LIBRARIES}
-  ${OpenCV_LIBRARIES}
-  )
-target_link_libraries(
-  rotation_transform_plugin
-  ${catkin_LIBRARIES}
-  ${Boost_LIBRARIES}
-  ${OpenCV_LIBRARIES}
-  )
-  target_link_libraries(
-  tf_transform_plugin
-  ${catkin_LIBRARIES}
-  ${OpenCV_LIBRARIES}
-  )
+)
 
 #############
 ## Install ##
@@ -262,10 +262,29 @@ target_link_libraries(
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_image_reprojection_plugins.cpp)
-# if(TARGET ${PROJECT_NAME}-test)
-#   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
-# endif()
+catkin_add_gtest(
+  test_mesh_surface_model 
+  test/test_mesh_surface_model.cpp
+)
+if(TARGET test_mesh_surface_model)
+  target_link_libraries(
+    test_mesh_surface_model
+    ${catkin_LIBRARIES}
+    ${OpenCV_LIBRARIES}
+  )
+endif()
+
+catkin_add_gtest(
+  test_camera_models 
+  test/test_camera_models.cpp
+)
+if(TARGET test_camera_models)
+  target_link_libraries(
+    test_camera_models
+    ${catkin_LIBRARIES}
+    ${OpenCV_LIBRARIES}
+  )
+endif()
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
