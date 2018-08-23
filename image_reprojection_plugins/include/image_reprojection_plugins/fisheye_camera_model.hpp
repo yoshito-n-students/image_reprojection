@@ -84,6 +84,7 @@ private:
 
     ros::NodeHandle &pnh(getPrivateNodeHandle());
     fov_ = pnh.param("fov", M_PI);
+    // TODO: support skew coeff
   }
 
   virtual void onProject3dToPixel(const cv::Mat &src, cv::Mat &dst, cv::Mat &mask) const {
