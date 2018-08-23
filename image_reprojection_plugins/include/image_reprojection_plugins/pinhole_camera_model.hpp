@@ -50,26 +50,30 @@ public:
       camera_matrix_(1, 2) -= camera_info.roi.y_offset;
     }
 
+    // copy ROI info in full resolution
+    frame_.x = camera_info.roi.x_offset;
+    frame_.y = camera_info.roi.y_offset;
+    frame_.width = (camera_info.roi.width == 0 ? camera_info.width : camera_info.roi.width);
+    frame_.height = (camera_info.roi.height == 0 ? camera_info.height : camera_info.roi.height);
+
     // adust image scaling
     if (camera_info.binning_x != 0 && camera_info.binning_x != 1) {
       camera_matrix_(0, 0) /= camera_info.binning_x;
       camera_matrix_(0, 1) /= camera_info.binning_x;
       camera_matrix_(0, 2) /= camera_info.binning_x;
+      frame_.x /= camera_info.binning_x;
+      frame_.width /= camera_info.binning_x;
     }
     if (camera_info.binning_y != 0 && camera_info.binning_y != 1) {
       camera_matrix_(1, 0) /= camera_info.binning_y;
       camera_matrix_(1, 1) /= camera_info.binning_y;
       camera_matrix_(1, 2) /= camera_info.binning_y;
+      frame_.y /= camera_info.binning_y;
+      frame_.height /= camera_info.binning_y;
     }
 
     // copy distortion coefficients which are independent from image resolution
     dist_coeffs_ = camera_info.D;
-
-    // copy image size info
-    frame_.x = camera_info.roi.x_offset;
-    frame_.y = camera_info.roi.y_offset;
-    frame_.width = (camera_info.roi.width == 0 ? camera_info.width : camera_info.roi.width);
-    frame_.height = (camera_info.roi.height == 0 ? camera_info.height : camera_info.roi.height);
   }
 
   virtual sensor_msgs::CameraInfoPtr toCameraInfo() const {
