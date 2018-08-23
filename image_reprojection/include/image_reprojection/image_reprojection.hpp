@@ -153,7 +153,7 @@ private:
 
     // setup the destination camera info updater
     dst_camera_info_server_ =
-        nh.advertiseService("set_camera_info", &ImageReprojection::onDstCameraInfoSet, this);
+        nh.advertiseService("set_dst_camera_info", &ImageReprojection::onDstCameraInfoSet, this);
 
     // setup the destination image publisher
     dst_camera_publisher_ = it.advertiseCamera("dst_image", 1, true);
