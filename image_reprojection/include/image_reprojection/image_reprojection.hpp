@@ -48,6 +48,7 @@ public:
     src_camera_subscribers_.clear();
     surface_subscriber_.shutdown();
     dst_camera_info_server_.shutdown();
+    dst_camera_timer_.stop();
     map_timer_.stop();
 
     // destroy all plugins before destroying loaders
