@@ -69,7 +69,7 @@ private:
     image_transport::ImageTransport it(nh);
 
     //
-    // src camera (TODO: multiple src cameras)
+    // src camera
     //
 
     for (int i = 0; true; ++i) {
