@@ -68,15 +68,21 @@ set_dst_camera_info (sensor_msgs/SetCameraInfo)
 ## Standard Camera Models
 
 ### PinholeCameraModel
-To be described ...
+* this is a wrapper of [opencv's pinhole camera model](http://todo/valid/url)
+* distortion model in camera info must be "plumb_bob" or "rational_polynomial"
 
 ### FisheyeCameraModel
-To be described ...
+* this is based on [opencv's fisheye camera model](http://todo/valid/url) but extended to support field of view over 180 degrees
+* distortion model in camera info must be "fisheye"
+
+#### Parameters
+~<model_namespace>/fov (double, default: pi / 2)
+* field of view in radians
 
 ## Standard Surface Models
 
 ### MeshSurfaceModel
-To be described ...
+* this implements 3D mesh triangles represented as [image_reprojection_plugins/MeshStamped](image_reprojection/image_reprojection_plugins/msg/MeshStamped.msg)
 
 ### DEMSurfaceModel
-Not available in this version ...
+* not available in this version ...
