@@ -1,5 +1,5 @@
 # image-reprojection
-A ROS nodelet to reproject image as if viewing from different viewpoint
+A ROS nodelet to reproject image as if viewing from different viewpoint or with different camera
 
 ## Reprojection Algorithm
 1. Calculate mapping between source and distination image pixels
@@ -53,7 +53,7 @@ set_dst_camera_info (sensor_msgs/SetCameraInfo)
 
 ~map_update/background (bool, default: false)
 * map update will be done in background if true, or in every reprojection of destination image if false
-* try true when desired fps is not realized as map update is most time consuming part of the algoritm
+* try true when desired fps is not realized as map update is most time consuming part in the algoritm
 
 ~map_update/frequency (double, default: 8.0)
 * frequency of background map update
@@ -63,7 +63,7 @@ set_dst_camera_info (sensor_msgs/SetCameraInfo)
 ~map_update/binning_y (int, default: 8)
 * scale of map between source images and destination image
 * size of map is defined by (width of dst image / binning_x, height of dst image / binning_y)
-* try greater value (smaller map size) if cpu usage is too high although the quality of dst image gets lower
+* try greater value (smaller map size) if cpu usage is too high although the quality of dst image may get lower
 
 ## Standard Camera Models
 
