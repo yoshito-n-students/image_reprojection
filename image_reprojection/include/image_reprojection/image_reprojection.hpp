@@ -127,8 +127,8 @@ private:
     // load parameters
     dst_image_encoding_ =
         pnh.param< std::string >("dst_camera/encoding", sensor_msgs::image_encodings::BGR8);
-    map_binning_x_ = pnh.param("map_update/binning_x", 5);
-    map_binning_y_ = pnh.param("map_update/binning_y", 5);
+    map_binning_x_ = pnh.param("map_update/binning_x", 8);
+    map_binning_y_ = pnh.param("map_update/binning_y", 8);
 
     // setup the coordinate frame transformer
     tf_listener_.reset(new tf::TransformListener(nh));
