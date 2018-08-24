@@ -16,7 +16,6 @@
 #include <image_transport/transport_hints.h>
 #include <nodelet/nodelet.h>
 #include <pluginlib/class_loader.h>
-#include <ros/console.h>
 #include <ros/node_handle.h>
 #include <ros/rate.h>
 #include <ros/service_server.h>
@@ -48,6 +47,7 @@ public:
     src_camera_subscribers_.clear();
     surface_subscriber_.shutdown();
     dst_camera_info_server_.shutdown();
+    dst_camera_timer_.stop();
     map_timer_.stop();
 
     // destroy all plugins before destroying loaders
@@ -68,7 +68,7 @@ private:
     image_transport::ImageTransport it(nh);
 
     //
-    // src camera (TODO: multiple src cameras)
+    // src camera
     //
 
     for (int i = 0; true; ++i) {
@@ -186,7 +186,7 @@ private:
       // convert the ROS source image to an opencv image
       src_images_[i] = cv_bridge::toCvShare(src_image, dst_image_encoding_);
     } catch (const std::exception &ex) {
-      ROS_ERROR_STREAM("onSrcCameraRecieved(" << i << "): " << ex.what());
+      NODELET_ERROR_STREAM("onSrcCameraRecieved(" << i << "): " << ex.what());
     }
   }
 
@@ -194,7 +194,7 @@ private:
     try {
       surface_model_->update(*surface);
     } catch (const std::exception &ex) {
-      ROS_ERROR_STREAM("onSurfaceRecieved: " << ex.what());
+      NODELET_ERROR_STREAM("onSurfaceRecieved: " << ex.what());
     }
   }
 
@@ -204,7 +204,7 @@ private:
       dst_camera_model_->fromCameraInfo(request.camera_info);
       response.success = true;
     } catch (const std::exception &ex) {
-      ROS_ERROR_STREAM("onDstCameraInfoSet: " << ex.what());
+      NODELET_ERROR_STREAM("onDstCameraInfoSet: " << ex.what());
       response.success = false;
       response.status_message = ex.what();
     }
@@ -258,7 +258,7 @@ private:
       // publish the destination image
       dst_camera_publisher_.publish(dst_image.toImageMsg(), dst_camera_info);
     } catch (const std::exception &ex) {
-      ROS_ERROR_STREAM("onDstCameraEvent: " << ex.what());
+      NODELET_ERROR_STREAM("onDstCameraEvent: " << ex.what());
     }
   }
 
@@ -266,7 +266,7 @@ private:
     try {
       updateMap();
     } catch (const std::exception &ex) {
-      ROS_ERROR_STREAM("onMapUpdateEvent: " << ex.what());
+      NODELET_ERROR_STREAM("onMapUpdateEvent: " << ex.what());
     }
   }
 
