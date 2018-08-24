@@ -231,9 +231,8 @@ private:
       dst_image.header.stamp = ros::Time::now();
       dst_image.header.frame_id = dst_camera_info->header.frame_id;
       dst_image.encoding = dst_image_encoding_;
-      CV_Assert(maps_[0].total() > 0);
-      CV_Assert(src_images_[0]);
-      dst_image.image = cv::Mat::zeros(maps_[0].size(), src_images_[0]->image.type());
+      dst_image.image =
+          cv::Mat::zeros(toImageSize(*dst_camera_info), cv_bridge::getCvType(dst_image_encoding_));
 
       if (do_update_map) {
         // update mapping between the source and destination images
@@ -276,11 +275,7 @@ private:
     CV_Assert(dst_camera_info);
 
     // figure out destination image size
-    const cv::Size dst_image_size(
-        (dst_camera_info->roi.width == 0 ? dst_camera_info->width : dst_camera_info->roi.width) /
-            (dst_camera_info->binning_x == 0 ? 1 : dst_camera_info->binning_x),
-        (dst_camera_info->roi.height == 0 ? dst_camera_info->height : dst_camera_info->roi.height) /
-            (dst_camera_info->binning_y == 0 ? 1 : dst_camera_info->binning_y));
+    const cv::Size dst_image_size(toImageSize(*dst_camera_info));
 
     // create initial map and mask
     cv::Mat binned_map, binned_mask;
@@ -342,6 +337,13 @@ private:
       cv::resize(binned_map_i, maps_[i], dst_image_size);
       cv::resize(binned_mask_i, masks_[i], dst_image_size);
     }
+  }
+
+  static cv::Size toImageSize(const sensor_msgs::CameraInfo &camera_info) {
+    return cv::Size((camera_info.roi.width == 0 ? camera_info.width : camera_info.roi.width) /
+                        (camera_info.binning_x == 0 ? 1 : camera_info.binning_x),
+                    (camera_info.roi.height == 0 ? camera_info.height : camera_info.roi.height) /
+                        (camera_info.binning_y == 0 ? 1 : camera_info.binning_y));
   }
 
 private:
