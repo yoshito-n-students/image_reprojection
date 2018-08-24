@@ -65,6 +65,13 @@ A ROS nodelet to reproject image as if viewing from different viewpoint or with 
 * size of map is defined by (width of dst image / binning_x, height of dst image / binning_y)
 * try greater value (smaller map size) if cpu usage is too high although the quality of dst image may get lower
 
+### Required tf Transforms
+**\<dst camera frame> -> \<surface frame>**\
+**\<surface frame> -> \<(every) src camera frame>**
+
+* camera frame ids are obtained by image_reprojection::CameraModel::toCameraInfo()->header.frame_id
+* surface frame ids are obtained by image_reprojection::SurfaceModel::getFrameId()
+
 ## Standard Camera Models
 
 ### PinholeCameraModel
