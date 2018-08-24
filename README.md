@@ -86,6 +86,9 @@ A ROS nodelet to reproject image as if viewing from different viewpoint or with 
 **~<camera_ns>/fov** (double, default: pi)
 * field of view in radians
 
+**~<camera_ns>/skew** (double, default: 0.0)
+* skew coefficient of the distortion model
+
 ## Standard Surface Models
 
 ### MeshSurfaceModel
