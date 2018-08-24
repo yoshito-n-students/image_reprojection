@@ -88,7 +88,7 @@ private:
 
     ros::NodeHandle &pnh(getPrivateNodeHandle());
     fov_ = pnh.param("fov", M_PI);
-    // TODO: support skew coeff
+    skew_ = pnh.param("skew", 0.);
   }
 
   virtual void onProject3dToPixel(const cv::Mat &src, cv::Mat &dst, cv::Mat &mask) const {
@@ -138,7 +138,7 @@ private:
     }
 
     // transform distorted point to pixel coordinate
-    dst.x = camera_matrix_(0, 0) * distorted.x + camera_matrix_(0, 2);
+    dst.x = camera_matrix_(0, 0) * (distorted.x + skew_ * distorted.y) + camera_matrix_(0, 2);
     dst.y = camera_matrix_(1, 1) * distorted.y + camera_matrix_(1, 2);
 
     // check dst pixel is in image frame
@@ -175,7 +175,8 @@ private:
     }
 
     // distorted point in camera coordinate
-    const cv::Point3d distorted((src.x - camera_matrix_(0, 2)) / camera_matrix_(0, 0),
+    const cv::Point3d distorted((src.x - camera_matrix_(0, 2)) / camera_matrix_(0, 0) -
+                                    skew_ * (src.y - camera_matrix_(1, 2)) / camera_matrix_(1, 1),
                                 (src.y - camera_matrix_(1, 2)) / camera_matrix_(1, 1), 1.);
     const double theta_d(cv::sqrt(distorted.x * distorted.x + distorted.y * distorted.y));
 
@@ -227,6 +228,7 @@ private:
 
   // additional info from rosparam
   double fov_;
+  double skew_;
 };
 
 } // namespace image_reprojection_plugins
