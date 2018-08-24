@@ -83,7 +83,7 @@ A ROS nodelet to reproject image as if viewing from different viewpoint or with 
 * distortion model in camera info must be "fisheye"
 
 #### Parameters
-**~<camera_ns>/fov** (double, default: pi / 2)
+**~<camera_ns>/fov** (double, default: pi)
 * field of view in radians
 
 ## Standard Surface Models
