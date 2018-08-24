@@ -15,11 +15,11 @@ A ROS nodelet to reproject image as if viewing from different viewpoint or with 
 
 ### Subsribed topics
 **src_imageN** <N = 0, 1, ..> (sensor_msgs/Image)
-* subscribed if the parameter src_cameraN/model is defined
+* subscribed if the parameter ~src_cameraN/model is defined
 * sensor_msgs/CameraInfo will also be subscribed by using image_transport::CameraSubscriber
 
 **surface** (arbitrary type)
-* type must be supported by surface model specified by the parameter ~surface/model
+* type must be supported by the surface model specified by the parameter ~surface/model
 
 ### Published topics
 **dst_image** (sensor_msgs/Image)
@@ -30,30 +30,30 @@ A ROS nodelet to reproject image as if viewing from different viewpoint or with 
 
 ### Parameters
 **~src_cameraN/model** <N = 1, 2, ..> (string, required for N = 0)
-* name or type of source camera model plugin whose base type is image_reprojection::CameraModel
-* other parameters for source camera model can be defined in the same namespace
+* name or type of the source camera model plugin whose base type is image_reprojection::CameraModel
+* other parameters for the source camera model can be defined in the same namespace
 
 **~surface/model** (string, required)
-* name or type of surface model plugin whose base type is image_reprojection::SurfaceModel
-* other parameters for surface model can be defined in the same namespace
+* name or type of the surface model plugin whose base type is image_reprojection::SurfaceModel
+* other parameters for the surface model can be defined in the same namespace
 
 **~dst_camera/model** (string, required)
-* name or type of destination camera model plugin whose base type is image_reprojection::CameraModel
-* other parameters for destination camera model can be defined in the same namespace
+* name or type of the destination camera model plugin whose base type is image_reprojection::CameraModel
+* other parameters for the destination camera model can be defined in the same namespace
 
 **~dst_camera/info_file** (string, required)
-* initial camera info of destination camera will be loaded from this file by using camera_calibration_parsers::readCalibration()
+* initial camera info of the destination camera will be loaded from this file by using camera_calibration_parsers::readCalibration()
 
 **~dst_camera/encoding** (string, default: "bgr8")
-* desired encoding of destination camera image
-* conversion from encoding of source camera image to this encoding must be possible
+* desired encoding of destination camera images
+* conversion from encoding of source camera images to this encoding must be possible
 
 **~dst_camera/fps** (double, default: 16.0)
 * rate of destination camera image/info publishment
 
 **~map_update/background** (bool, default: false)
 * map update will be done in background if true, or in every reprojection of destination image if false
-* try true when desired fps is not realized as map update is most time consuming part in the algoritm
+* try true when desired fps is not realized as map update is the most time consuming part in the algoritm
 
 **~map_update/frequency** (double, default: 8.0)
 * frequency of background map update
@@ -61,7 +61,7 @@ A ROS nodelet to reproject image as if viewing from different viewpoint or with 
 
 **~map_update/binning_x** (int, default: 8)\
 **~map_update/binning_y** (int, default: 8)
-* scale of map between source images and destination image
+* scale of map between source images and a destination image
 * size of map is defined by (width of dst image / binning_x, height of dst image / binning_y)
 * try greater value (smaller map size) if cpu usage is too high although the quality of dst image may get lower
 
