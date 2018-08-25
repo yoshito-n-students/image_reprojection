@@ -332,18 +332,22 @@ private:
       cv::Mat binned_map_i(binned_map.clone());
       src_camera_models_[i]->project3dToPixel(intersections_i, binned_map_i, binned_mask_i);
 
-      // inpaint invalid pixels of the shrinked map using valid pixels
+      // inpaint invalid mappings in the shrinked map using valid ones
       // to get better full resolution map by resizing the shrinked map
-      if (cv::countNonZero(binned_mask_i) > 0) {
-        // invert mask to indicate pixels to be inpainted
-        cv::Mat inpaint_mask_i(cv::Mat::ones(binned_map_size, CV_8UC1));
-        inpaint_mask_i.setTo(0, binned_mask_i);
-        // inpaint every channel (cv::inpaint() does not accept 2-channel mat)
-        for (int channel = 0; channel < binned_map_i.channels(); ++channel) {
-          cv::Mat inpaint_map_i;
-          cv::extractChannel(binned_map_i, inpaint_map_i, channel);
-          cv::inpaint(inpaint_map_i, inpaint_mask_i, inpaint_map_i, 1., cv::INPAINT_NS);
-          cv::insertChannel(inpaint_map_i, binned_map_i, channel);
+      {
+        const int n_valid_mappings(cv::countNonZero(binned_mask_i));
+        // if both valid and invalid mappings exist
+        if (n_valid_mappings > 0 && n_valid_mappings < binned_map_i.total()) {
+          // invert mask to indicate pixels to be inpainted
+          cv::Mat inpaint_mask_i(cv::Mat::ones(binned_map_size, CV_8UC1));
+          inpaint_mask_i.setTo(0, binned_mask_i);
+          // inpaint every channel (cv::inpaint() does not accept 2-channel mat)
+          for (int channel = 0; channel < binned_map_i.channels(); ++channel) {
+            cv::Mat inpainted_map_i;
+            cv::extractChannel(binned_map_i, inpainted_map_i, channel);
+            cv::inpaint(inpainted_map_i, inpaint_mask_i, inpainted_map_i, 1., cv::INPAINT_NS);
+            cv::insertChannel(inpainted_map_i, binned_map_i, channel);
+          }
         }
       }
 
