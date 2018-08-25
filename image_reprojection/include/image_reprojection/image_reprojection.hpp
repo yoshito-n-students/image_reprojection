@@ -335,19 +335,16 @@ private:
       // inpaint invalid pixels of the shrinked map using valid pixels
       // to get better full resolution map by resizing the shrinked map
       {
-        // split channels of the shrinked map because cv::inpaint() does not accept 2-channel mat
-        cv::Mat binned_x_map_i, binned_y_map_i;
-        cv::extractChannel(binned_map_i, binned_x_map_i, 0);
-        cv::extractChannel(binned_map_i, binned_y_map_i, 1);
         // invert mask to indicate pixels to be inpainted
         cv::Mat inpaint_mask_i(cv::Mat::ones(binned_map_size, CV_8UC1));
         inpaint_mask_i.setTo(0, binned_mask_i);
-        // inpaint every channel
-        cv::inpaint(binned_x_map_i, inpaint_mask_i, binned_x_map_i, 1., cv::INPAINT_NS);
-        cv::inpaint(binned_y_map_i, inpaint_mask_i, binned_y_map_i, 1., cv::INPAINT_NS);
-        // copy inpainted channels to the shrinked map
-        cv::insertChannel(binned_x_map_i, binned_map_i, 0);
-        cv::insertChannel(binned_y_map_i, binned_map_i, 1);
+        // inpaint every channel (cv::inpaint() does not accept 2-channel mat)
+        for (int channel = 0; channel < binned_map_i.channels(); ++channel) {
+          cv::Mat inpaint_map_i;
+          cv::extractChannel(binned_map_i, inpaint_map_i, channel);
+          cv::inpaint(inpaint_map_i, inpaint_mask_i, inpaint_map_i, 1., cv::INPAINT_NS);
+          cv::insertChannel(inpaint_map_i, binned_map_i, channel);
+        }
       }
 
       // write updated mapping between source and destination images
