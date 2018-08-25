@@ -29,6 +29,7 @@
 #include <tf/transform_listener.h>
 #include <topic_tools/shape_shifter.h>
 
+#include <boost/lexical_cast.hpp>
 #include <boost/scoped_ptr.hpp>
 
 #include <opencv2/core/core.hpp>
