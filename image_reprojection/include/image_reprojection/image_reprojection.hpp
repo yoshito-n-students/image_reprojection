@@ -350,8 +350,8 @@ private:
       }
 
       // write updated mapping between source and destination images
-      cv::resize(binned_map_i, maps_[i], dst_image_size);
-      cv::resize(binned_mask_i, masks_[i], dst_image_size);
+      cv::resize(binned_map_i, maps_[i], dst_image_size, cv::INTER_LINEAR);
+      cv::resize(binned_mask_i, masks_[i], dst_image_size, cv::INTER_NEAREST);
     }
   }
 
