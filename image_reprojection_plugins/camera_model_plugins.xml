@@ -1,0 +1,19 @@
+<library path="lib/libimage_reprojection_camera_model_plugins">
+
+  <class name="image_reprojection_plugins/FisheyeCameraModel" 
+         type="image_reprojection_plugins::FisheyeCameraModel" 
+         base_class_type="image_reprojection::CameraModel">
+    <description>
+      Plugin calculating fisheye camera projection
+    </description>
+  </class>
+
+  <class name="image_reprojection_plugins/PinholeCameraModel"
+         type="image_reprojection_plugins::PinholeCameraModel"
+      	 base_class_type="image_reprojection::CameraModel">
+    <description>
+      Plugin calculating pinhole camera projection
+    </description>
+  </class>
+
+</library>

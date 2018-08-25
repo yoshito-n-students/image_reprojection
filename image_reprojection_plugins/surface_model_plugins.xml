@@ -1,0 +1,19 @@
+<library path="lib/libimage_reprojection_surface_model_plugins">
+
+  <class name="image_reprojection_plugins/DEMSurfaceModel"
+         type="image_reprojection_plugins::DEMSurfaceModel"
+	       base_class_type="image_reprojection::SurfaceModel">
+    <description>
+      Plugin calculating intersection with digital elevation map (DEM)
+    </description>
+  </class>
+
+  <class name="image_reprojection_plugins/MeshSurfaceModel"
+         type="image_reprojection_plugins::MeshSurfaceModel"
+	       base_class_type="image_reprojection::SurfaceModel">
+    <description>
+      Plugin calculating intersection with mesh triangles
+    </description>
+  </class>
+
+</library>
