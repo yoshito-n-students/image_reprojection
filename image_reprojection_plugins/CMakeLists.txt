@@ -17,7 +17,7 @@ find_package(
   std_msgs
   nodelet
   tf
-  )
+)
 
 ## System dependencies are found with CMake's conventions
 find_package(
@@ -25,11 +25,11 @@ find_package(
   calib3d
   core
   imgproc
-  )
+)
 find_package(
   Boost REQUIRED COMPONENTS
   thread
-  )
+)
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -147,7 +147,7 @@ catkin_package(
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
-  )
+)
 
 ## Declare a C++ library
 add_library(
@@ -191,11 +191,13 @@ target_link_libraries(
   image_reprojection_camera_model_plugins
   ${catkin_LIBRARIES}
   ${OpenCV_LIBRARIES}
+  ${Boost_LIBRARIES}
 )
 target_link_libraries(
   image_reprojection_surface_model_plugins
   ${catkin_LIBRARIES}
   ${OpenCV_LIBRARIES}
+  ${Boost_LIBRARIES}
 )
 target_link_libraries(
   image_reprojection_nodelet_plugins
