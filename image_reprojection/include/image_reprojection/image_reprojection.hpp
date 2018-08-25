@@ -387,8 +387,7 @@ private:
   // mapping between src and dst image pixels
   ros::Timer map_timer_;
   boost::scoped_ptr< tf::TransformListener > tf_listener_;
-  int map_binning_x_;
-  int map_binning_y_;
+  int map_binning_x_, map_binning_y_;
   std::vector< cv::Mat > maps_;
   std::vector< cv::Mat > masks_;
 };
