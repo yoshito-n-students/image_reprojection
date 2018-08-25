@@ -33,6 +33,7 @@
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/photo/photo.hpp>
 
 namespace image_reprojection {
 
@@ -274,24 +275,21 @@ private:
     const sensor_msgs::CameraInfoConstPtr dst_camera_info(dst_camera_model_->toCameraInfo());
     CV_Assert(dst_camera_info);
 
-    // figure out destination image size
+    // figure out size of destination image and shrinked map
     const cv::Size dst_image_size(toImageSize(*dst_camera_info));
+    const cv::Size binned_map_size(dst_image_size.width / map_binning_x_,
+                                   dst_image_size.height / map_binning_y_);
 
     // create initial map and mask
-    cv::Mat binned_map, binned_mask;
-    {
-      cv::Mat full_map(dst_image_size, CV_32FC2);
-      for (int x = 0; x < dst_image_size.width; ++x) {
-        for (int y = 0; y < dst_image_size.height; ++y) {
-          // center coordinate of the pixel
-          full_map.at< cv::Point2f >(y, x) = cv::Point2f(x + 0.5, y + 0.5);
-        }
+    cv::Mat binned_map(binned_map_size, CV_32FC2);
+    for (int x = 0; x < binned_map_size.width; ++x) {
+      for (int y = 0; y < binned_map_size.height; ++y) {
+        binned_map.at< cv::Point2f >(y, x) =
+            cv::Point2f((dst_image_size.width - 1.) * x / (binned_map_size.width - 1.),
+                        (dst_image_size.height - 1.) * y / (binned_map_size.height - 1.));
       }
-      const cv::Size binned_map_size(dst_image_size.width / map_binning_x_,
-                                     dst_image_size.height / map_binning_y_);
-      cv::resize(full_map, binned_map, binned_map_size);
-      binned_mask = cv::Mat::ones(binned_map_size, CV_8UC1);
     }
+    cv::Mat binned_mask(cv::Mat::ones(binned_map_size, CV_8UC1));
 
     // calculate mapping from destination pixels to ray toward surface
     cv::Mat ray_directions;
@@ -332,6 +330,24 @@ private:
       // calculate mapping from points on surface to source pixels
       cv::Mat binned_map_i(binned_map.clone());
       src_camera_models_[i]->project3dToPixel(intersections_i, binned_map_i, binned_mask_i);
+
+      // inpaint invalid pixels of the shrinked map using valid pixels
+      // to get better full resolution map by resizing the shrinked map
+      {
+        // split channels of the shrinked map because cv::inpaint() does not accept 2-channel mat
+        cv::Mat binned_x_map_i, binned_y_map_i;
+        cv::extractChannel(binned_map_i, binned_x_map_i, 0);
+        cv::extractChannel(binned_map_i, binned_y_map_i, 1);
+        // invert mask to indicate pixels to be inpainted
+        cv::Mat inpaint_mask_i(cv::Mat::ones(binned_map_size, CV_8UC1));
+        inpaint_mask_i.setTo(0, binned_mask_i);
+        // inpaint every channel
+        cv::inpaint(binned_x_map_i, inpaint_mask_i, binned_x_map_i, 1., cv::INPAINT_NS);
+        cv::inpaint(binned_y_map_i, inpaint_mask_i, binned_y_map_i, 1., cv::INPAINT_NS);
+        // copy inpainted channels to the shrinked map
+        cv::insertChannel(binned_x_map_i, binned_map_i, 0);
+        cv::insertChannel(binned_y_map_i, binned_map_i, 1);
+      }
 
       // write updated mapping between source and destination images
       cv::resize(binned_map_i, maps_[i], dst_image_size);
