@@ -29,6 +29,7 @@
 #include <tf/transform_listener.h>
 #include <topic_tools/shape_shifter.h>
 
+#include <boost/bind.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/scoped_ptr.hpp>
 
@@ -98,7 +99,7 @@ private:
         static const image_transport::TransportHints default_hints;
         src_camera_subscribers_.push_back(it.subscribeCamera(
             "src_image" + i_str, 1,
-            boost::bind(&ImageReprojection::onSrcCameraRecieved, this, _1, _2, i), ros::VoidPtr(),
+            boost::bind(&ImageReprojection::onSrcCameraReceived, this, _1, _2, i), ros::VoidPtr(),
             image_transport::TransportHints(default_hints.getTransport(),
                                             default_hints.getRosHints(),
                                             ros::NodeHandle(pnh, "src_camera" + i_str))));
@@ -120,7 +121,7 @@ private:
     }
 
     // setup the surface subscriber
-    surface_subscriber_ = nh.subscribe("surface", 1, &ImageReprojection::onSurfaceRecieved, this);
+    surface_subscriber_ = nh.subscribe("surface", 1, &ImageReprojection::onSurfaceReceived, this);
 
     //
     // dst camera and map update
@@ -179,24 +180,21 @@ private:
   // passive event handlers
   //
 
-  void onSrcCameraRecieved(const sensor_msgs::ImageConstPtr &src_image,
+  void onSrcCameraReceived(const sensor_msgs::ImageConstPtr &src_image,
                            const sensor_msgs::CameraInfoConstPtr &src_camera_info, const int i) {
     try {
-      // update source camera model
       src_camera_models_[i]->fromCameraInfo(*src_camera_info);
-
-      // convert the ROS source image to an opencv image
       src_images_[i] = cv_bridge::toCvShare(src_image, dst_image_encoding_);
     } catch (const std::exception &ex) {
-      NODELET_ERROR_STREAM("onSrcCameraRecieved(" << i << "): " << ex.what());
+      NODELET_ERROR_STREAM("onSrcCameraReceived(" << i << "): " << ex.what());
     }
   }
 
-  void onSurfaceRecieved(const topic_tools::ShapeShifter::ConstPtr &surface) {
+  void onSurfaceReceived(const topic_tools::ShapeShifter::ConstPtr &surface) {
     try {
       surface_model_->update(*surface);
     } catch (const std::exception &ex) {
-      NODELET_ERROR_STREAM("onSurfaceRecieved: " << ex.what());
+      NODELET_ERROR_STREAM("onSurfaceReceived: " << ex.what());
     }
   }
 
@@ -343,10 +341,10 @@ private:
           inpaint_mask_i.setTo(0, binned_mask_i);
           // inpaint every channel (cv::inpaint() does not accept 2-channel mat)
           for (int channel = 0; channel < binned_map_i.channels(); ++channel) {
-            cv::Mat inpainted_map_i;
-            cv::extractChannel(binned_map_i, inpainted_map_i, channel);
-            cv::inpaint(inpainted_map_i, inpaint_mask_i, inpainted_map_i, 1., cv::INPAINT_NS);
-            cv::insertChannel(inpainted_map_i, binned_map_i, channel);
+            cv::Mat tmp;
+            cv::extractChannel(binned_map_i, tmp, channel);
+            cv::inpaint(tmp, inpaint_mask_i, tmp, 1., cv::INPAINT_NS);
+            cv::insertChannel(tmp, binned_map_i, channel);
           }
         }
       }
