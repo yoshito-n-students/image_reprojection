@@ -70,7 +70,7 @@ private:
     image_transport::ImageTransport it(nh);
 
     //
-    // src camera
+    // src cameras
     //
 
     for (int i = 0; true; ++i) {
@@ -95,7 +95,7 @@ private:
 
       // subscribe src camera
       {
-        const image_transport::TransportHints default_hints;
+        static const image_transport::TransportHints default_hints;
         src_camera_subscribers_.push_back(it.subscribeCamera(
             "src_image" + i_str, 1,
             boost::bind(&ImageReprojection::onSrcCameraRecieved, this, _1, _2, i), ros::VoidPtr(),
