@@ -334,7 +334,7 @@ private:
 
       // inpaint invalid pixels of the shrinked map using valid pixels
       // to get better full resolution map by resizing the shrinked map
-      {
+      if (cv::countNonZero(binned_mask_i) > 0) {
         // invert mask to indicate pixels to be inpainted
         cv::Mat inpaint_mask_i(cv::Mat::ones(binned_map_size, CV_8UC1));
         inpaint_mask_i.setTo(0, binned_mask_i);
