@@ -61,6 +61,42 @@ public:
   }
 
   /*
+     checks 3D rays from ray origin and surface intersect at expected points within errors.
+     mask is input and output; as input it should indicate valid input intersections.
+     as output it should indicate intersections which satisfy error conditions.
+   */
+  void intersectsAt(const cv::Vec3f &src_origin, const cv::Mat &expected, cv::Mat &mask,
+                    const double abs_error) const {
+    /*
+      required conditions
+    */
+
+    // allowable error must be zero or positive
+    CV_Assert(abs_error >= 0.);
+
+    /*
+      calculation of actual intersection
+    */
+
+    cv::Mat actual;
+    intersection(src_origin, expected - cv::Mat(expected.size(), CV_32FC3).setTo(src_origin),
+                 actual, mask);
+
+    /*
+      update mask according to error on intersection points
+     */
+
+    for (int x = 0; x < mask.size().width; ++x) {
+      for (int y = 0; y < mask.size().height; ++y) {
+        unsigned char &m(mask.at< unsigned char >(y, x));
+        const cv::Vec3f &a(actual.at< cv::Vec3f >(y, x));
+        const cv::Vec3f &e(expected.at< cv::Vec3f >(y, x));
+        m = (m != 0 && cv::norm(a, e) <= abs_error) ? 1 : 0;
+      }
+    }
+  }
+
+  /*
     update this model
   */
   virtual void update(const topic_tools::ShapeShifter &surface) = 0;

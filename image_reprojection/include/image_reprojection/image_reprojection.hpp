@@ -309,24 +309,26 @@ private:
     cv::Mat intersections;
     surface_model_->intersection(ray_origin, ray_directions, intersections, binned_mask);
 
-    // TODO: check intersection points are visible from src camera origin using the surface model
-
     for (int i = 0; i < src_camera_models_.size(); ++i) {
-      // transform intersection points into source camera frame
-      cv::Mat intersections_i;
-      cv::Mat binned_mask_i(binned_mask.clone());
+      // get transform between src camera and surface
+      tf::StampedTransform src_i2surface;
       {
         const sensor_msgs::CameraInfoConstPtr src_camera_info_i(
             src_camera_models_[i]->toCameraInfo());
         CV_Assert(src_camera_info_i);
-        tf::StampedTransform surface2src_i;
-        tf_listener_->lookupTransform(/* to */ src_camera_info_i->header.frame_id,
-                                      /* from */ surface_model_->getFrameId(),
-                                      /* at latest time */ ros::Time(0), surface2src_i);
-        intersections_i = transform(intersections, surface2src_i, binned_mask_i);
+        tf_listener_->lookupTransform(/* to */ surface_model_->getFrameId(),
+                                      /* from */ src_camera_info_i->header.frame_id,
+                                      /* at latest time */ ros::Time(0), src_i2surface);
       }
 
+      // check intersection points are visible from src camera
+      cv::Mat binned_mask_i(binned_mask.clone());
+      surface_model_->intersectsAt(transform(cv::Vec3f(0., 0., 0.), src_i2surface), intersections,
+                                   binned_mask_i, 0.001);
+
       // calculate mapping from points on surface to source pixels
+      const cv::Mat intersections_i(
+          transform(intersections, src_i2surface.inverse(), binned_mask_i));
       cv::Mat binned_map_i(binned_map.clone());
       src_camera_models_[i]->project3dToPixel(intersections_i, binned_map_i, binned_mask_i);
 
