@@ -17,7 +17,7 @@ find_package(
   std_msgs
   nodelet
   tf
-  )
+)
 
 ## System dependencies are found with CMake's conventions
 find_package(
@@ -25,11 +25,11 @@ find_package(
   calib3d
   core
   imgproc
-  )
+)
 find_package(
   Boost REQUIRED COMPONENTS
   thread
-  )
+)
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -119,9 +119,9 @@ generate_messages(
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES 
-  fisheye_camera_model_plugin
-  mesh_surface_model_plugin
-  pinhole_camera_model_plugin
+  image_reprojection_camera_model_plugins
+  image_reprojection_surface_model_plugins
+  image_reprojection_nodelet_plugins
   CATKIN_DEPENDS 
   camera_info_manager
   cv_bridge 
@@ -147,27 +147,21 @@ catkin_package(
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
-  )
+)
 
 ## Declare a C++ library
 add_library(
-  pinhole_camera_model_plugin
+  image_reprojection_camera_model_plugins
+  src/fisheye_camera_model_plugin.cpp
   src/pinhole_camera_model_plugin.cpp
 )
 add_library(
-  fisheye_camera_model_plugin
-  src/fisheye_camera_model_plugin.cpp
-)
-add_library(
-  mesh_surface_model_plugin
+  image_reprojection_surface_model_plugins
+  src/dem_surface_model_plugin.cpp
   src/mesh_surface_model_plugin.cpp
 )
 add_library(
-  dem_surface_model_plugin
-  src/dem_surface_model_plugin.cpp
-)
-add_library(
-  dual_fisheye_splitter
+  image_reprojection_nodelet_plugins
   src/dual_fisheye_splitter.cpp
 )
 
@@ -175,7 +169,7 @@ add_library(
 ## as an example, code may need to be generated before libraries
 ## either from message generation or dynamic reconfigure
 add_dependencies(
-  mesh_surface_model_plugin
+  image_reprojection_surface_model_plugins
   ${image_reprojection_plugins_EXPORTED_TARGETS} 
 )
 
@@ -194,27 +188,19 @@ add_dependencies(
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(
-  pinhole_camera_model_plugin
+  image_reprojection_camera_model_plugins
   ${catkin_LIBRARIES}
   ${OpenCV_LIBRARIES}
+  ${Boost_LIBRARIES}
 )
 target_link_libraries(
-  fisheye_camera_model_plugin
+  image_reprojection_surface_model_plugins
   ${catkin_LIBRARIES}
   ${OpenCV_LIBRARIES}
+  ${Boost_LIBRARIES}
 )
 target_link_libraries(
-  mesh_surface_model_plugin
-  ${catkin_LIBRARIES}
-  ${OpenCV_LIBRARIES}
-)
-target_link_libraries(
-  dem_surface_model_plugin
-  ${catkin_LIBRARIES}
-  ${OpenCV_LIBRARIES}
-)
-target_link_libraries(
-  dual_fisheye_splitter
+  image_reprojection_nodelet_plugins
   ${catkin_LIBRARIES}
 )
 target_link_libraries(

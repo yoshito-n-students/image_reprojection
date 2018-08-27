@@ -67,10 +67,8 @@
   <!-- The export tag contains other, unspecified, tags -->
   <export>
     <!-- Other tools can request additional information be placed here -->
-    <nodelet plugin="${prefix}/plugin_descriptions/dual_fisheye_splitter.xml" />
-    <image_reprojection plugin="${prefix}/plugin_descriptions/dem_surface_model_plugin.xml" />
-    <image_reprojection plugin="${prefix}/plugin_descriptions/fisheye_camera_model_plugin.xml" />
-    <image_reprojection plugin="${prefix}/plugin_descriptions/mesh_surface_model_plugin.xml" />
-    <image_reprojection plugin="${prefix}/plugin_descriptions/pinhole_camera_model_plugin.xml" />
+    <image_reprojection plugin="${prefix}/camera_model_plugins.xml" />
+    <image_reprojection plugin="${prefix}/surface_model_plugins.xml" />
+    <nodelet plugin="${prefix}/nodelet_plugins.xml" />
   </export>
 </package>

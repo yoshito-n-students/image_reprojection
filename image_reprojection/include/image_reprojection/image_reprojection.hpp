@@ -29,10 +29,13 @@
 #include <tf/transform_listener.h>
 #include <topic_tools/shape_shifter.h>
 
+#include <boost/bind.hpp>
+#include <boost/lexical_cast.hpp>
 #include <boost/scoped_ptr.hpp>
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/photo/photo.hpp>
 
 namespace image_reprojection {
 
@@ -68,7 +71,7 @@ private:
     image_transport::ImageTransport it(nh);
 
     //
-    // src camera
+    // src cameras
     //
 
     for (int i = 0; true; ++i) {
@@ -93,10 +96,10 @@ private:
 
       // subscribe src camera
       {
-        const image_transport::TransportHints default_hints;
+        static const image_transport::TransportHints default_hints;
         src_camera_subscribers_.push_back(it.subscribeCamera(
             "src_image" + i_str, 1,
-            boost::bind(&ImageReprojection::onSrcCameraRecieved, this, _1, _2, i), ros::VoidPtr(),
+            boost::bind(&ImageReprojection::onSrcCameraReceived, this, _1, _2, i), ros::VoidPtr(),
             image_transport::TransportHints(default_hints.getTransport(),
                                             default_hints.getRosHints(),
                                             ros::NodeHandle(pnh, "src_camera" + i_str))));
@@ -118,7 +121,7 @@ private:
     }
 
     // setup the surface subscriber
-    surface_subscriber_ = nh.subscribe("surface", 1, &ImageReprojection::onSurfaceRecieved, this);
+    surface_subscriber_ = nh.subscribe("surface", 1, &ImageReprojection::onSurfaceReceived, this);
 
     //
     // dst camera and map update
@@ -177,24 +180,21 @@ private:
   // passive event handlers
   //
 
-  void onSrcCameraRecieved(const sensor_msgs::ImageConstPtr &src_image,
+  void onSrcCameraReceived(const sensor_msgs::ImageConstPtr &src_image,
                            const sensor_msgs::CameraInfoConstPtr &src_camera_info, const int i) {
     try {
-      // update source camera model
       src_camera_models_[i]->fromCameraInfo(*src_camera_info);
-
-      // convert the ROS source image to an opencv image
       src_images_[i] = cv_bridge::toCvShare(src_image, dst_image_encoding_);
     } catch (const std::exception &ex) {
-      NODELET_ERROR_STREAM("onSrcCameraRecieved(" << i << "): " << ex.what());
+      NODELET_ERROR_STREAM("onSrcCameraReceived(" << i << "): " << ex.what());
     }
   }
 
-  void onSurfaceRecieved(const topic_tools::ShapeShifter::ConstPtr &surface) {
+  void onSurfaceReceived(const topic_tools::ShapeShifter::ConstPtr &surface) {
     try {
       surface_model_->update(*surface);
     } catch (const std::exception &ex) {
-      NODELET_ERROR_STREAM("onSurfaceRecieved: " << ex.what());
+      NODELET_ERROR_STREAM("onSurfaceReceived: " << ex.what());
     }
   }
 
@@ -231,9 +231,8 @@ private:
       dst_image.header.stamp = ros::Time::now();
       dst_image.header.frame_id = dst_camera_info->header.frame_id;
       dst_image.encoding = dst_image_encoding_;
-      CV_Assert(maps_[0].total() > 0);
-      CV_Assert(src_images_[0]);
-      dst_image.image = cv::Mat::zeros(maps_[0].size(), src_images_[0]->image.type());
+      dst_image.image =
+          cv::Mat::zeros(toImageSize(*dst_camera_info), cv_bridge::getCvType(dst_image_encoding_));
 
       if (do_update_map) {
         // update mapping between the source and destination images
@@ -275,28 +274,21 @@ private:
     const sensor_msgs::CameraInfoConstPtr dst_camera_info(dst_camera_model_->toCameraInfo());
     CV_Assert(dst_camera_info);
 
-    // figure out destination image size
-    const cv::Size dst_image_size(
-        (dst_camera_info->roi.width == 0 ? dst_camera_info->width : dst_camera_info->roi.width) /
-            (dst_camera_info->binning_x == 0 ? 1 : dst_camera_info->binning_x),
-        (dst_camera_info->roi.height == 0 ? dst_camera_info->height : dst_camera_info->roi.height) /
-            (dst_camera_info->binning_y == 0 ? 1 : dst_camera_info->binning_y));
+    // figure out size of destination image and shrinked map
+    const cv::Size dst_image_size(toImageSize(*dst_camera_info));
+    const cv::Size binned_map_size(dst_image_size.width / map_binning_x_,
+                                   dst_image_size.height / map_binning_y_);
 
     // create initial map and mask
-    cv::Mat binned_map, binned_mask;
-    {
-      cv::Mat full_map(dst_image_size, CV_32FC2);
-      for (int x = 0; x < dst_image_size.width; ++x) {
-        for (int y = 0; y < dst_image_size.height; ++y) {
-          // center coordinate of the pixel
-          full_map.at< cv::Point2f >(y, x) = cv::Point2f(x + 0.5, y + 0.5);
-        }
+    cv::Mat binned_map(binned_map_size, CV_32FC2);
+    for (int x = 0; x < binned_map_size.width; ++x) {
+      for (int y = 0; y < binned_map_size.height; ++y) {
+        binned_map.at< cv::Point2f >(y, x) =
+            cv::Point2f((dst_image_size.width - 1.) * x / (binned_map_size.width - 1.),
+                        (dst_image_size.height - 1.) * y / (binned_map_size.height - 1.));
       }
-      const cv::Size binned_map_size(dst_image_size.width / map_binning_x_,
-                                     dst_image_size.height / map_binning_y_);
-      cv::resize(full_map, binned_map, binned_map_size);
-      binned_mask = cv::Mat::ones(binned_map_size, CV_8UC1);
     }
+    cv::Mat binned_mask(cv::Mat::ones(binned_map_size, CV_8UC1));
 
     // calculate mapping from destination pixels to ray toward surface
     cv::Mat ray_directions;
@@ -338,10 +330,36 @@ private:
       cv::Mat binned_map_i(binned_map.clone());
       src_camera_models_[i]->project3dToPixel(intersections_i, binned_map_i, binned_mask_i);
 
+      // inpaint invalid mappings in the shrinked map using valid ones
+      // to get better full resolution map by resizing the shrinked map
+      {
+        const int n_valid_mappings(cv::countNonZero(binned_mask_i));
+        // if both valid and invalid mappings exist
+        if (n_valid_mappings > 0 && n_valid_mappings < binned_map_i.total()) {
+          // invert mask to indicate pixels to be inpainted
+          cv::Mat inpaint_mask_i(cv::Mat::ones(binned_map_size, CV_8UC1));
+          inpaint_mask_i.setTo(0, binned_mask_i);
+          // inpaint every channel (cv::inpaint() does not accept 2-channel mat)
+          for (int channel = 0; channel < binned_map_i.channels(); ++channel) {
+            cv::Mat tmp;
+            cv::extractChannel(binned_map_i, tmp, channel);
+            cv::inpaint(tmp, inpaint_mask_i, tmp, 1., cv::INPAINT_NS);
+            cv::insertChannel(tmp, binned_map_i, channel);
+          }
+        }
+      }
+
       // write updated mapping between source and destination images
-      cv::resize(binned_map_i, maps_[i], dst_image_size);
-      cv::resize(binned_mask_i, masks_[i], dst_image_size);
+      cv::resize(binned_map_i, maps_[i], dst_image_size, cv::INTER_LINEAR);
+      cv::resize(binned_mask_i, masks_[i], dst_image_size, cv::INTER_NEAREST);
     }
+  }
+
+  static cv::Size toImageSize(const sensor_msgs::CameraInfo &camera_info) {
+    return cv::Size((camera_info.roi.width == 0 ? camera_info.width : camera_info.roi.width) /
+                        (camera_info.binning_x == 0 ? 1 : camera_info.binning_x),
+                    (camera_info.roi.height == 0 ? camera_info.height : camera_info.roi.height) /
+                        (camera_info.binning_y == 0 ? 1 : camera_info.binning_y));
   }
 
 private:
@@ -368,8 +386,7 @@ private:
   // mapping between src and dst image pixels
   ros::Timer map_timer_;
   boost::scoped_ptr< tf::TransformListener > tf_listener_;
-  int map_binning_x_;
-  int map_binning_y_;
+  int map_binning_x_, map_binning_y_;
   std::vector< cv::Mat > maps_;
   std::vector< cv::Mat > masks_;
 };

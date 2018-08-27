@@ -1,4 +1,5 @@
-<library path="lib/libdual_fisheye_splitter">
+<library path="lib/libimage_reprojection_nodelet_plugins">
+
   <class name="image_reprojection_plugins/DualFisheyeSplitter"
          type="image_reprojection_plugins::DualFisheyeSplitter"
 	       base_class_type="nodelet::Nodelet">
@@ -6,4 +7,5 @@
       Split dual-fisheye image and publish left- and right-hand images with camera infos
     </description>
   </class>
+
 </library>
