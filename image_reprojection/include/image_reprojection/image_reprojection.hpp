@@ -321,10 +321,10 @@ private:
                                       /* at latest time */ ros::Time(0), src_i2surface);
       }
 
-      // check intersection points are visible from src camera
+      // exclude intersection points not visible from src camera
       cv::Mat binned_mask_i(binned_mask.clone());
       surface_model_->intersectsAt(transform(cv::Vec3f(0., 0., 0.), src_i2surface), intersections,
-                                   binned_mask_i, 0.001);
+                                   binned_mask_i, /* allowable error */ 0.001);
 
       // calculate mapping from points on surface to source pixels
       const cv::Mat intersections_i(
