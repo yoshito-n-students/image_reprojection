@@ -4,11 +4,12 @@ A ROS nodelet to reproject image as if viewing from different viewpoint or with 
 ## Reprojection Algorithm
 1. Calculate mapping between source and destination image pixels
     1. Project destination image pixels to 3D rays by using a **destination camera model**
-    1. Calculate intersections between 3D rays from the destination camera and a surface by using a **surface model**
-    1. Project intersection points to source image pixels by using a **source camera model**
+    1. Calculate intersections between 3D rays from the destination camera and a surface by using the **surface model**
+    1. Exclude intersections which are not visible from a source camera by using the same **surface model**
+    1. Project intersection points visible from the source camera to source image pixels by using the **source camera model**
 1. Generate a destination image by mapping source to destination image pixels
 
-* Models used in 1-i to 1-iii are implemented as plugins so user can use own models as well as standard models described below
+* Models used in 1-i to 1-iv are implemented as plugins so user can use own models as well as standard models described below
 * 1 and 2 can be performed either sequentially or simultaneously
 
 ## Nodelet: ImageReprojection
