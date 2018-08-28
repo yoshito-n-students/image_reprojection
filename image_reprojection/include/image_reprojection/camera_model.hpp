@@ -59,6 +59,7 @@ public:
 
   /*
     project points in camera's 2D pixel coordinate to rays in camera's 3D optical coordinate.
+    output ray directions may not be normalized.
     mask is input and output; as input it should indicate valid input points.
     as output it should indicate successfully-projected points.
    */

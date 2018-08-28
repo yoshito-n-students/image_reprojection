@@ -25,6 +25,7 @@ public:
 
   /*
     calculate intersection between 3D ray in surface coordinate and surface.
+    input ray directions have not to be normalized.
     mask is input and output; as input it should indicate valid input rays.
     as output it should indicate rays which intersects the surface.
   */
@@ -62,6 +63,7 @@ public:
 
   /*
      checks 3D rays from ray origin and surface intersect at expected points within errors.
+     ray origin and expected intersection points are assumed to be described in surface coordinate.
      mask is input and output; as input it should indicate valid input intersections.
      as output it should indicate intersections which satisfy error conditions.
    */
