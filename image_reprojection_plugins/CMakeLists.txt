@@ -11,11 +11,11 @@ find_package(
   image_reprojection
   message_generation
   nav_msgs
+  nodelet
   pluginlib
   roscpp
   shape_msgs
   std_msgs
-  nodelet
   tf
 )
 
@@ -128,11 +128,11 @@ catkin_package(
   image_reprojection 
   message_runtime
   nav_msgs 
+  nodelet
   pluginlib 
   roscpp 
   shape_msgs
   std_msgs
-  nodelet
   tf
 #  DEPENDS system_lib
 )
