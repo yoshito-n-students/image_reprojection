@@ -99,4 +99,9 @@ A ROS nodelet to reproject image as if viewing from different viewpoint or with 
 * this implements 3D mesh triangles represented as [image_reprojection_plugins/MeshStamped](image_reprojection_plugins/msg/MeshStamped.msg)
 
 ### DEMSurfaceModel
-* not available in this version ...
+* this implements digital elevation map (DEM) represented as nav_msgs/OccupancyGrid
+
+#### Parameters
+**~<surface_ns>/min_data** (double, required)\
+**~<surface_ns>/max_data** (double, required)\
+* elevation value when nav_msgs::OccupancyGrid::data[] is 0 or 100
