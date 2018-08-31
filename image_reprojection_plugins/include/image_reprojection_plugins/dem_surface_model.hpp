@@ -67,8 +67,8 @@ private:
     boost::unique_lock< boost::shared_mutex > write_lock(mutex_);
 
     ros::NodeHandle &pnh(getPrivateNodeHandle());
-    CV_Assert(pnh.getParam("min_data", min_data_));
-    CV_Assert(pnh.getParam("max_data", max_data_));
+    min_data_ = pnh.param("min_data", 0.);
+    max_data_ = pnh.param("max_data", 1.);
   }
 
   virtual void onIntersection(const cv::Vec3f &src_origin, const cv::Mat &src_direction,
@@ -80,7 +80,7 @@ private:
     const tf::Transform tf2dem(dem2tf_.inverse());
     multirayDEMIntersection(ir::transform(src_origin, tf2dem),
                             ir::transform(src_direction, tf2dem.getBasis(), mask), dst, mask);
-    dst = ir::transform(dst, dem2tf_);
+    dst = ir::transform(dst, dem2tf_, mask);
   }
 
   void multirayDEMIntersection(const cv::Vec3f &src_origin, const cv::Mat &src_direction,
@@ -121,7 +121,7 @@ private:
                           const int xid, const int yid, cv::Vec3f &dst) const {
     // box specs
     const cv::Vec3d box_origin(xid * resolution_, yid * resolution_, 0.);
-    const cv::Vec3d box_length(resolution_, resolution_, data_.at< float >(yid, xid));
+    const cv::Vec3d box_length(resolution_, resolution_, data_.at< double >(yid, xid));
 
     // intersection point (p) can bescribed as
     //   p = r + t * d
