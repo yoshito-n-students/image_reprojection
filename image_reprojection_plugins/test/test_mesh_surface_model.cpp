@@ -96,7 +96,7 @@ TEST(MeshSurfaceModel, randomIntersection) {
           tm(true_mask.at< unsigned char >(y, x));
       EXPECT_TRUE((m != 0 && tm != 0) || (m == 0 && tm == 0));
       // compare intersection points
-      if (m != 0) {
+      if (m != 0 && tm != 0) {
         const cv::Vec3f i(intersection.at< cv::Vec3f >(y, x)),
             ti(true_intersection.at< cv::Vec3f >(y, x));
         EXPECT_NEAR(i[0], ti[0], 0.001);
