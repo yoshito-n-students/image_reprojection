@@ -15,16 +15,19 @@ namespace irp = image_reprojection_plugins;
 cv::RNG g_rng(std::time(NULL));
 
 void twoRandomPoints(geometry_msgs::Point &point1, geometry_msgs::Point &point2) {
+  // random coordinates of 1st point
   point1.x = g_rng.uniform(-1., 1.);
   point1.y = g_rng.uniform(-1., 1.);
   point1.z = g_rng.uniform(-1., 1.);
 
+  // random difference, whose norm is 1, between 2 points
   cv::Vec3d dp;
   dp[0] = g_rng.uniform(-1., 1.);
   dp[1] = g_rng.uniform(-1., 1.);
   dp[2] = g_rng.uniform(-1., 1.);
   cv::normalize(dp);
 
+  // 2nd point from 1st point and difference
   point2.x = point1.x + dp[0];
   point2.y = point1.y + dp[1];
   point2.z = point1.z + dp[2];
@@ -81,8 +84,8 @@ shape_msgs::MeshTriangle meshTriangle(const unsigned int id0, const unsigned int
                                       const unsigned int id2) {
   shape_msgs::MeshTriangle triangle;
   triangle.vertex_indices[0] = id0;
-  triangle.vertex_indices[0] = id1;
-  triangle.vertex_indices[0] = id2;
+  triangle.vertex_indices[1] = id1;
+  triangle.vertex_indices[2] = id2;
   return triangle;
 }
 
@@ -127,12 +130,12 @@ irp::MeshStamped toMesh(const nav_msgs::OccupancyGrid &grid) {
   return mesh;
 }
 
-TEST(DEMSurfaceModel, compare10000) {
-  //
+TEST(DEMSurfaceModel, compareMeshIntersection) {
+  // random ray- and dem-origin which are apart 1.0 each other
   geometry_msgs::Point ray_origin, dem_origin;
   twoRandomPoints(ray_origin, dem_origin);
 
-  //
+  // 1-box DEM at random pose
   nav_msgs::OccupancyGrid dem;
   dem.info.resolution = 0.5;
   dem.info.width = 1;
@@ -141,37 +144,39 @@ TEST(DEMSurfaceModel, compare10000) {
   dem.info.origin.orientation = randomOrientation();
   dem.data.resize(1, 100);
 
-  //
+  // initialize tested model with random DEM
   irp::DEMSurfaceModel dem_model;
   dem_model.init("dem", ros::M_string(), ros::V_string());
   dem_model.update(dem);
 
-  // initialize tested model with random mesh
+  // initialize comparative model with a mesh generated from the same DEM
   irp::MeshSurfaceModel mesh_model;
   mesh_model.init("mesh", ros::M_string(), ros::V_string());
   mesh_model.update(toMesh(dem));
 
-  //
+  // random ray directions
   const int width(100), height(100);
   const cv::Mat ray_direction(randomDirection(width, height));
 
-  // generate truth data at random
+  // calculate intersection using tested model
   cv::Mat dem_intersection, dem_mask(cv::Mat::ones(ray_direction.size(), CV_8UC1));
   dem_model.intersection(cv::Vec3f(ray_origin.x, ray_origin.y, ray_origin.z), ray_direction,
                          dem_intersection, dem_mask);
+  EXPECT_GT(cv::countNonZero(dem_mask), 0);
 
-
+  // calculate intersection using comparative model
   cv::Mat mesh_intersection, mesh_mask(cv::Mat::ones(ray_direction.size(), CV_8UC1));
   mesh_model.intersection(cv::Vec3f(ray_origin.x, ray_origin.y, ray_origin.z), ray_direction,
                           mesh_intersection, mesh_mask);
+  EXPECT_GT(cv::countNonZero(mesh_mask), 0);
 
-  // compare results from tested model and expected results
+  // compare results from tested and comparative models
   for (int x = 0; x < width; ++x) {
     for (int y = 0; y < height; ++y) {
-      //
+      // compare mask values
       const unsigned char dm(dem_mask.at< unsigned char >(y, x));
       const unsigned char mm(mesh_mask.at< unsigned char >(y, x));
-      EXPECT_TRUE(dm == mm);
+      EXPECT_TRUE((dm != 0 && mm != 0) || (dm == 0 && mm == 0));
       // compare intersection points
       if (dm != 0 && mm != 0) {
         const cv::Vec3f di(dem_intersection.at< cv::Vec3f >(y, x));
