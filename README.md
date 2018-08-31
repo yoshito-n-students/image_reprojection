@@ -103,5 +103,5 @@ A ROS nodelet to reproject image as if viewing from different viewpoint or with 
 
 #### Parameters
 **~<surface_ns>/min_data** (double, default: 0.0)\
-**~<surface_ns>/max_data** (double, default: 1.0)\
+**~<surface_ns>/max_data** (double, default: 1.0)
 * elevation value when nav_msgs::OccupancyGrid::data[] is 0 or 100
