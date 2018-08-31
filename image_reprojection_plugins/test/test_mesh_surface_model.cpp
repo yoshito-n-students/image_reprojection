@@ -70,7 +70,7 @@ void randomIntersection(const cv::Size &dsize, const irp::MeshStamped &mesh, cv:
   }
 }
 
-TEST(Intersection, random10000) {
+TEST(MeshSurfaceModel, randomIntersection) {
   // initialize tested model with random mesh
   irp::MeshSurfaceModel model;
   model.init("mesh", ros::M_string(), ros::V_string());
@@ -82,6 +82,7 @@ TEST(Intersection, random10000) {
   cv::Vec3f ray_origin;
   cv::Mat ray_direction, true_intersection, true_mask;
   randomIntersection(size, mesh, ray_origin, ray_direction, true_intersection, true_mask);
+  EXPECT_GT(cv::countNonZero(true_mask), 0);
 
   // calculate intersections using tested model
   cv::Mat intersection, mask(cv::Mat::ones(ray_direction.size(), CV_8UC1));
@@ -95,7 +96,7 @@ TEST(Intersection, random10000) {
           tm(true_mask.at< unsigned char >(y, x));
       EXPECT_TRUE((m != 0 && tm != 0) || (m == 0 && tm == 0));
       // compare intersection points
-      if (m != 0) {
+      if (m != 0 && tm != 0) {
         const cv::Vec3f i(intersection.at< cv::Vec3f >(y, x)),
             ti(true_intersection.at< cv::Vec3f >(y, x));
         EXPECT_NEAR(i[0], ti[0], 0.001);
