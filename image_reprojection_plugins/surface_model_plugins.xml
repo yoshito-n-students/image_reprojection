@@ -16,4 +16,12 @@
     </description>
   </class>
 
+  <class name="image_reprojection_plugins/PlaneSurfaceModel"
+         type="image_reprojection_plugins::PlaneSurfaceModel"
+	       base_class_type="image_reprojection::SurfaceModel">
+    <description>
+      Plugin calculating intersection with plane
+    </description>
+  </class>
+
 </library>

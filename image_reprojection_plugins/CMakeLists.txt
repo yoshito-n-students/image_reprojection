@@ -8,6 +8,7 @@ find_package(
   catkin REQUIRED COMPONENTS
   camera_info_manager
   cv_bridge
+  geometry_msgs
   image_reprojection
   message_generation
   nav_msgs
@@ -64,6 +65,7 @@ find_package(
 add_message_files(
   FILES
   MeshStamped.msg
+  PlaneStamped.msg
 )
 
 ## Generate services in the 'srv' folder
@@ -83,6 +85,7 @@ add_message_files(
 ## Generate added messages and services with any dependencies listed here
 generate_messages(
   DEPENDENCIES
+  geometry_msgs
   shape_msgs
   std_msgs
 )
@@ -125,6 +128,7 @@ catkin_package(
   CATKIN_DEPENDS 
   camera_info_manager
   cv_bridge 
+  geometry_msgs
   image_reprojection 
   message_runtime
   nav_msgs 
@@ -159,6 +163,7 @@ add_library(
   image_reprojection_surface_model_plugins
   src/dem_surface_model_plugin.cpp
   src/mesh_surface_model_plugin.cpp
+  src/plane_surface_model_plugin.cpp
 )
 add_library(
   image_reprojection_nodelet_plugins
@@ -178,11 +183,19 @@ add_executable(
   static_mesh_publisher 
   src/static_mesh_publisher.cpp
 )
+add_executable(
+  static_plane_publisher 
+  src/static_plane_publisher.cpp
+)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
 add_dependencies(
   static_mesh_publisher 
+  ${image_reprojection_plugins_EXPORTED_TARGETS} 
+)
+add_dependencies(
+  static_plane_publisher 
   ${image_reprojection_plugins_EXPORTED_TARGETS} 
 )
 
@@ -205,6 +218,10 @@ target_link_libraries(
 )
 target_link_libraries(
   static_mesh_publisher
+  ${catkin_LIBRARIES}
+)
+target_link_libraries(
+  static_plane_publisher
   ${catkin_LIBRARIES}
 )
 
