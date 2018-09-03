@@ -95,6 +95,9 @@ A ROS nodelet to reproject image as if viewing from different viewpoint or with 
 
 ## Standard Surface Models
 
+### PlaneSurfaceModel
+* this implements a plane represented as [image_reprojection_plugins/PlaneStamped](image_reprojection_plugins/msg/PlaneStamped.msg)
+
 ### MeshSurfaceModel
 * this implements 3D mesh triangles represented as [image_reprojection_plugins/MeshStamped](image_reprojection_plugins/msg/MeshStamped.msg)
 
