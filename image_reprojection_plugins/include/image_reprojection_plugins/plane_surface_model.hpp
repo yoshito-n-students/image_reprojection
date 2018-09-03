@@ -2,13 +2,11 @@
 #define IMAGE_REPROJECTION_PLUGINS_PLANE_SURFACE_MODEL_HPP
 
 #include <string>
-#include <vector>
 
 #include <image_reprojection/surface_model.hpp>
 #include <image_reprojection_plugins/PlaneStamped.h>
 #include <topic_tools/shape_shifter.h>
 
-#include <boost/foreach.hpp>
 #include <boost/thread/locks.hpp>
 #include <boost/thread/shared_mutex.hpp>
 
