@@ -292,6 +292,18 @@ if(TARGET test_camera_models)
 endif()
 
 catkin_add_gtest(
+  test_dem_surface_model 
+  test/test_dem_surface_model.cpp
+)
+if(TARGET test_dem_surface_model)
+  target_link_libraries(
+    test_dem_surface_model
+    ${catkin_LIBRARIES}
+    ${OpenCV_LIBRARIES}
+  )
+endif()
+
+catkin_add_gtest(
   test_mesh_surface_model 
   test/test_mesh_surface_model.cpp
 )
@@ -304,12 +316,12 @@ if(TARGET test_mesh_surface_model)
 endif()
 
 catkin_add_gtest(
-  test_dem_surface_model 
-  test/test_dem_surface_model.cpp
+  test_plane_surface_model 
+  test/test_plane_surface_model.cpp
 )
-if(TARGET test_dem_surface_model)
+if(TARGET test_plane_surface_model)
   target_link_libraries(
-    test_dem_surface_model
+    test_plane_surface_model
     ${catkin_LIBRARIES}
     ${OpenCV_LIBRARIES}
   )
