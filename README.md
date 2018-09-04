@@ -99,6 +99,10 @@ A ROS nodelet to reproject image as if viewing from different viewpoint or with 
 * this implements a plane represented as [image_reprojection_plugins/PlaneStamped](image_reprojection_plugins/msg/PlaneStamped.msg)
 * static_plane_publisher would be useful to periodically publish static plane messages
 
+### SphereSurfaceModel
+* this implements a sphere represented as [image_reprojection_plugins/SphereStamped](image_reprojection_plugins/msg/SphereStamped.msg)
+* static_sphere_publisher would be useful to periodically publish static sphere messages
+
 ### MeshSurfaceModel
 * this implements 3D mesh triangles represented as [image_reprojection_plugins/MeshStamped](image_reprojection_plugins/msg/MeshStamped.msg)
 * static_mesh_publisher would be useful to periodically publish static mesh messages

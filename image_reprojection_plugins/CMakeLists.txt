@@ -66,6 +66,7 @@ add_message_files(
   FILES
   MeshStamped.msg
   PlaneStamped.msg
+  SphereStamped.msg
 )
 
 ## Generate services in the 'srv' folder
@@ -164,6 +165,7 @@ add_library(
   src/dem_surface_model_plugin.cpp
   src/mesh_surface_model_plugin.cpp
   src/plane_surface_model_plugin.cpp
+  src/sphere_surface_model_plugin.cpp
 )
 add_library(
   image_reprojection_nodelet_plugins
@@ -187,6 +189,10 @@ add_executable(
   static_plane_publisher 
   src/static_plane_publisher.cpp
 )
+add_executable(
+  static_sphere_publisher 
+  src/static_sphere_publisher.cpp
+)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
@@ -196,6 +202,10 @@ add_dependencies(
 )
 add_dependencies(
   static_plane_publisher 
+  ${image_reprojection_plugins_EXPORTED_TARGETS} 
+)
+add_dependencies(
+  static_sphere_publisher 
   ${image_reprojection_plugins_EXPORTED_TARGETS} 
 )
 
@@ -222,6 +232,10 @@ target_link_libraries(
 )
 target_link_libraries(
   static_plane_publisher
+  ${catkin_LIBRARIES}
+)
+target_link_libraries(
+  static_sphere_publisher
   ${catkin_LIBRARIES}
 )
 
