@@ -327,5 +327,17 @@ if(TARGET test_plane_surface_model)
   )
 endif()
 
+catkin_add_gtest(
+  test_sphere_surface_model 
+  test/test_sphere_surface_model.cpp
+)
+if(TARGET test_sphere_surface_model)
+  target_link_libraries(
+    test_sphere_surface_model
+    ${catkin_LIBRARIES}
+    ${OpenCV_LIBRARIES}
+  )
+endif()
+
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
