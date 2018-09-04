@@ -55,7 +55,7 @@ TEST(SphereSurfaceModel, randomIntersection) {
 
 int main(int argc, char *argv[]) {
   testing::InitGoogleTest(&argc, argv);
-  ros::init(argc, argv, "test_mesh_surface_model");
+  ros::init(argc, argv, "test_sphere_surface_model");
   ros::NodeHandle nh;
   return RUN_ALL_TESTS();
 }
