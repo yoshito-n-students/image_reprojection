@@ -11,7 +11,7 @@
 
 namespace irp = image_reprojection_plugins;
 
-irp::SphereStamped toSphere(const cv::Vec3f &center, const double radius) {
+irp::SphereStamped toSphereMsg(const cv::Vec3f &center, const double radius) {
   irp::SphereStamped sphere;
   sphere.center = toPointMsg(center);
   sphere.radius = radius;
@@ -24,7 +24,7 @@ TEST(SphereSurfaceModel, randomIntersection) {
   model.init("sphere", ros::M_string(), ros::V_string());
   const cv::Vec3f center(randomPoint(-1., 1.));
   const double radius(randomNonZeroValue(0., 1.));
-  model.update(toSphere(center, radius));
+  model.update(toSphereMsg(center, radius));
 
   // calculate intersections using tested model
   const cv::Size size(100, 100);
@@ -39,7 +39,7 @@ TEST(SphereSurfaceModel, randomIntersection) {
       if (mask.at< unsigned char >(y, x) != 0) {
         // intersection point is on the sphere
         const cv::Vec3f i(intersection.at< cv::Vec3f >(y, x));
-        EXPECT_NEAR(cv::norm(i, center), radius, 0.001);
+        EXPECT_NEAR(cv::norm(i, center), radius, 0.001 * radius);
 
         // ray direction vector points intersection point
         const cv::Vec3f d(ray_direction.at< cv::Vec3f >(y, x));
