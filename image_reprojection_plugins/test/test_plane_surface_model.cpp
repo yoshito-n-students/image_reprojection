@@ -46,7 +46,14 @@ TEST(PlaneSurfaceModel, randomIntersection) {
         EXPECT_TRUE(t >= 0.);
         EXPECT_NEAR(cv::norm(i, ray_origin + t * d), 0., 0.001 * cv::norm(t * d));
       } else {
-        // TODO: check no intersection
+        const cv::Vec3f d(ray_direction.at< cv::Vec3f >(y, x));
+        if (normal.dot(ray_origin - point) >= 0. /* if ray origin is above plane */) {
+          // ray direction should point upward
+          EXPECT_GE(normal.dot(d), 0.);
+        } else /* if ray origin is below plane */ {
+          // ray direction should point downward
+          EXPECT_LE(normal.dot(d), 0.);
+        }
       }
     }
   }
