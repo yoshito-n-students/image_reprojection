@@ -7,37 +7,10 @@
 
 #include <opencv2/core/core.hpp>
 
+#include "random.hpp"
+
 namespace ir = image_reprojection;
 namespace irp = image_reprojection_plugins;
-
-//
-// random source points generators
-//
-
-// the global random number generator
-cv::RNG g_rng(std::time(NULL));
-
-cv::Mat randomPoints(const cv::Size &size) {
-  cv::Mat points(size, CV_32FC3);
-  for (int x = 0; x < size.width; ++x) {
-    for (int y = 0; y < size.height; ++y) {
-      points.at< cv::Point3f >(y, x) =
-          cv::Point3f(g_rng.uniform(-1., 1.), g_rng.uniform(-1., 1.), g_rng.uniform(-1., 1.));
-    }
-  }
-  return points;
-}
-
-cv::Mat randomPixels(const cv::Size &size, const cv::Rect_< float > &range) {
-  cv::Mat pixels(size, CV_32FC2);
-  for (int x = 0; x < size.width; ++x) {
-    for (int y = 0; y < size.height; ++y) {
-      pixels.at< cv::Point2f >(y, x) = cv::Point2f(g_rng.uniform(range.x, range.x + range.width),
-                                                   g_rng.uniform(range.y, range.y + range.height));
-    }
-  }
-  return pixels;
-}
 
 //
 // test backends
@@ -132,7 +105,7 @@ TEST(PinholeCameraModel, 3dToPixelTo3dRay) {
   model.fromCameraInfo(camera_info);
 
   // perform test with random points
-  test3dToPixelTo3dRay(model, randomPoints(cv::Size(100, 100)));
+  test3dToPixelTo3dRay(model, randomPoints(cv::Size(100, 100), -1., 1.));
 }
 
 TEST(PinholeCameraModel, pixelTo3dRayToPixel) {
@@ -154,8 +127,8 @@ TEST(PinholeCameraModel, pixelTo3dRayToPixel) {
 
   // perform test with random pixels
   const cv::Size num_pixels(100, 100);
-  const cv::Rect range_pixels(cv::Point(-500, -500), cv::Size(2500, 2000));
-  testPixelTo3dRayToPixel(model, randomPixels(num_pixels, range_pixels));
+  const cv::Rect region(cv::Point(-500, -500), cv::Size(2500, 2000));
+  testPixelTo3dRayToPixel(model, randomPixels(num_pixels, region));
 }
 
 TEST(FisheyeCameraModel, 3dToPixelTo3dRay) {
@@ -176,7 +149,7 @@ TEST(FisheyeCameraModel, 3dToPixelTo3dRay) {
   model.fromCameraInfo(camera_info);
 
   // perform test with random points
-  test3dToPixelTo3dRay(model, randomPoints(cv::Size(100, 100)));
+  test3dToPixelTo3dRay(model, randomPoints(cv::Size(100, 100), -1., 1.));
 }
 
 TEST(FisheyeCameraModel, pixelTo3dRayToPixel) {
@@ -198,8 +171,8 @@ TEST(FisheyeCameraModel, pixelTo3dRayToPixel) {
 
   // perform test with random pixels
   const cv::Size num_pixels(100, 100);
-  const cv::Rect range_pixels(cv::Point(-500, -500), cv::Size(2500, 2000));
-  testPixelTo3dRayToPixel(model, randomPixels(num_pixels, range_pixels));
+  const cv::Rect region(cv::Point(-500, -500), cv::Size(2500, 2000));
+  testPixelTo3dRayToPixel(model, randomPixels(num_pixels, region));
 }
 
 int main(int argc, char *argv[]) {

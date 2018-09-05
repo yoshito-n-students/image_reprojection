@@ -11,7 +11,7 @@ static cv::RNG g_rng(std::time(NULL));
 // generate random value between a and b
 static inline double randomValue(const double a, const double b) { return g_rng.uniform(a, b); }
 
-// generate random value between a and b, except zero 
+// generate random value between a and b, except zero
 static inline double randomNonZeroValue(const double a, const double b) {
   while (true) {
     const double value(randomValue(a, b));
@@ -19,6 +19,12 @@ static inline double randomNonZeroValue(const double a, const double b) {
       return value;
     }
   }
+}
+
+// generate random pixel coordinate in given region
+static inline cv::Vec2f randomPixel(const cv::Rect_< float > &region) {
+  return cv::Vec2f(randomValue(region.x, region.x + region.width),
+                   randomValue(region.y, region.y + region.height));
 }
 
 // generate random point, each element is between a and b
@@ -36,6 +42,17 @@ static inline cv::Vec3f randomNonZeroPoint(const double a, const double b) {
       }
     }
   }
+}
+
+// generate set of pixels by using randomPixel()
+static inline cv::Mat randomPixels(const cv::Size &size, const cv::Rect_< float > &region) {
+  cv::Mat pixels(size, CV_32FC2);
+  for (int x = 0; x < size.width; ++x) {
+    for (int y = 0; y < size.height; ++y) {
+      pixels.at< cv::Vec2f >(y, x) = randomPixel(region);
+    }
+  }
+  return pixels;
 }
 
 // generate set of points by using randomPoint()
