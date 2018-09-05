@@ -155,7 +155,7 @@ TEST(DEMSurfaceModel, compareMeshIntersection) {
       if (dm != 0 && mm != 0) {
         const cv::Vec3f di(dem_intersection.at< cv::Vec3f >(y, x));
         const cv::Vec3f mi(mesh_intersection.at< cv::Vec3f >(y, x));
-        EXPECT_NEAR(cv::norm(di, mi), 0., 0.001 * cv::norm(di));
+        EXPECT_NEAR(cv::norm(di, mi), 0., 0.001 * cv::norm(mi));
       }
     }
   }
