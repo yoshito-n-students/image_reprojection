@@ -7,25 +7,16 @@
 
 #include <opencv2/core/core.hpp>
 
+#include "random.hpp"
+
 namespace irp = image_reprojection_plugins;
 
-// the global random number generator
-cv::RNG g_rng(std::time(NULL));
-
-geometry_msgs::Point randomPoint() {
-  geometry_msgs::Point p;
-  p.x = g_rng.uniform(-1., 1.);
-  p.y = g_rng.uniform(-1., 1.);
-  p.z = g_rng.uniform(-1., 1.);
-  return p;
-}
-
 // generate mesh having exactly one random triangle
-irp::MeshStamped randomMesh() {
+irp::MeshStamped randomMeshMsg() {
   irp::MeshStamped mesh;
-  mesh.mesh.vertices.push_back(randomPoint());
-  mesh.mesh.vertices.push_back(randomPoint());
-  mesh.mesh.vertices.push_back(randomPoint());
+  mesh.mesh.vertices.push_back(toPointMsg(randomPoint(-1., 1.)));
+  mesh.mesh.vertices.push_back(toPointMsg(randomPoint(-1., 1.)));
+  mesh.mesh.vertices.push_back(toPointMsg(randomPoint(-1., 1.)));
   shape_msgs::MeshTriangle triangle;
   triangle.vertex_indices[0] = 0;
   triangle.vertex_indices[1] = 1;
@@ -48,9 +39,7 @@ void randomIntersection(const cv::Size &dsize, const irp::MeshStamped &mesh, cv:
   intersection.create(dsize, CV_32FC3);
   mask.create(dsize, CV_8UC1);
 
-  ray_origin[0] = g_rng.uniform(-1., 1.);
-  ray_origin[1] = g_rng.uniform(-1., 1.);
-  ray_origin[2] = g_rng.uniform(-1., 1.);
+  ray_origin = randomPoint(-1., 1.);
 
   const cv::Vec3f v0(triangleVertex(mesh, 0, 0));
   const cv::Vec3f e1(triangleVertex(mesh, 0, 1) - v0);
@@ -58,11 +47,11 @@ void randomIntersection(const cv::Size &dsize, const irp::MeshStamped &mesh, cv:
   for (int x = 0; x < dsize.width; ++x) {
     for (int y = 0; y < dsize.height; ++y) {
       //
-      const double b1(g_rng.uniform(-0.5, 1.5)), b2(g_rng.uniform(-0.5, 1.5));
+      const double b1(randomValue(-0.5, 1.5)), b2(randomValue(-0.5, 1.5));
       const cv::Vec3f p(v0 + b1 * e1 + b2 * e2);
       intersection.at< cv::Vec3f >(y, x) = p;
       //
-      const double d_scale(g_rng.uniform(-1., 2.));
+      const double d_scale(randomNonZeroValue(-1., 2.));
       ray_direction.at< cv::Vec3f >(y, x) = d_scale * (p - ray_origin);
       //
       mask.at< unsigned char >(y, x) = (b1 >= 0 && b2 >= 0 && b1 + b2 <= 1 && d_scale >= 0) ? 1 : 0;
@@ -74,7 +63,7 @@ TEST(MeshSurfaceModel, randomIntersection) {
   // initialize tested model with random mesh
   irp::MeshSurfaceModel model;
   model.init("mesh", ros::M_string(), ros::V_string());
-  const irp::MeshStamped mesh(randomMesh());
+  const irp::MeshStamped mesh(randomMeshMsg());
   model.update(mesh);
 
   // generate truth data at random
@@ -99,9 +88,7 @@ TEST(MeshSurfaceModel, randomIntersection) {
       if (m != 0 && tm != 0) {
         const cv::Vec3f i(intersection.at< cv::Vec3f >(y, x)),
             ti(true_intersection.at< cv::Vec3f >(y, x));
-        EXPECT_NEAR(i[0], ti[0], 0.001);
-        EXPECT_NEAR(i[1], ti[1], 0.001);
-        EXPECT_NEAR(i[2], ti[2], 0.001);
+        EXPECT_NEAR(cv::norm(i, ti), 0., 0.001 * cv::norm(ti));
       }
     }
   }
