@@ -13,24 +13,9 @@
 
 namespace irp = image_reprojection_plugins;
 
-void twoRandomPoints(cv::Vec3f &point1, cv::Vec3f &point2) {
-  // random coordinates of 1st point
-  point1 = randomPoint(-1., 1.);
-
-  // random difference, whose norm is 1, between 2 points
-  cv::Vec3f dp(randomNonZeroPoint(-1., 1.));
-  cv::normalize(dp, dp);
-
-  // 2nd point from 1st point and difference
-  point2 = point1 + dp;
-}
-
 geometry_msgs::Quaternion randomOrientationMsg() {
-  // random rotaion axis
-  cv::Vec3d axis(randomNonZeroPoint(-1., 1.));
-  cv::normalize(axis, axis);
-
-  // random rotation angle
+  // random rotaion axis and angle
+  const cv::Vec3d axis(cv::normalize(randomNonZeroPoint(-1., 1.)));
   const double half_angle(randomValue(-M_PI / 2., M_PI / 2.));
 
   // quaternion from rotation axis and angle
@@ -107,12 +92,9 @@ irp::MeshStamped toMeshMsg(const nav_msgs::OccupancyGrid &grid) {
 }
 
 TEST(DEMSurfaceModel, compareMeshIntersection) {
-  // random ray- and dem-origin which are apart 1.0 each other
-  cv::Vec3f ray_origin, dem_origin;
-  twoRandomPoints(ray_origin, dem_origin);
-
   // 1-box DEM at random pose
   nav_msgs::OccupancyGrid dem;
+  const cv::Vec3f dem_origin(randomPoint(-1., 1.));
   dem.info.resolution = 0.5;
   dem.info.width = 1;
   dem.info.height = 1;
@@ -130,8 +112,9 @@ TEST(DEMSurfaceModel, compareMeshIntersection) {
   mesh_model.init("mesh", ros::M_string(), ros::V_string());
   mesh_model.update(toMeshMsg(dem));
 
-  // random ray directions
+  // random ray whose source is apart 1.0 from DEM origin and has random direction
   const cv::Size size(100, 100);
+  const cv::Vec3f ray_origin(dem_origin + cv::normalize(randomNonZeroPoint(-1, 1.)));
   const cv::Mat ray_direction(randomNonZeroPoints(size, -1., 1.));
 
   // calculate intersection using tested model
