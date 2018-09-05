@@ -47,7 +47,13 @@ TEST(SphereSurfaceModel, randomIntersection) {
         EXPECT_TRUE(t >= 0.);
         EXPECT_NEAR(cv::norm(i, ray_origin + t * d), 0., 0.001 * cv::norm(t * d));
       } else {
-        // TODO: check no intersection
+        // ray and sphere intersects if norm(x - c) <= radius && s >= 0, where
+        //   x = o + s * d
+        //   dot(d, x - c) = 0
+        //   (o: ray origin, d: ray direction, c: sphere center)
+        const cv::Vec3f d(ray_direction.at< cv::Vec3f >(y, x));
+        const double s((center - ray_origin).dot(d) / d.dot(d));
+        EXPECT_TRUE(cv::norm(/* x */ ray_origin + s * d, center) > radius || s < 0.);
       }
     }
   }
