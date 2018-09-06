@@ -9,40 +9,14 @@
 
 #include <opencv2/core/core.hpp>
 
+#include "random.hpp"
+
 namespace irp = image_reprojection_plugins;
 
-// the global random number generator
-cv::RNG g_rng(std::time(NULL));
-
-void twoRandomPoints(geometry_msgs::Point &point1, geometry_msgs::Point &point2) {
-  // random coordinates of 1st point
-  point1.x = g_rng.uniform(-1., 1.);
-  point1.y = g_rng.uniform(-1., 1.);
-  point1.z = g_rng.uniform(-1., 1.);
-
-  // random difference, whose norm is 1, between 2 points
-  cv::Vec3d dp;
-  dp[0] = g_rng.uniform(-1., 1.);
-  dp[1] = g_rng.uniform(-1., 1.);
-  dp[2] = g_rng.uniform(-1., 1.);
-  cv::normalize(dp);
-
-  // 2nd point from 1st point and difference
-  point2.x = point1.x + dp[0];
-  point2.y = point1.y + dp[1];
-  point2.z = point1.z + dp[2];
-}
-
-geometry_msgs::Quaternion randomOrientation() {
-  // random rotaion axis
-  cv::Vec3d axis;
-  axis[0] = g_rng.uniform(-1., 1.);
-  axis[1] = g_rng.uniform(-1., 1.);
-  axis[2] = g_rng.uniform(-1., 1.);
-  cv::normalize(axis, axis);
-
-  // random rotation angle
-  const double half_angle(g_rng.uniform(-M_PI / 2., M_PI / 2.));
+geometry_msgs::Quaternion randomOrientationMsg() {
+  // random rotaion axis and angle
+  const cv::Vec3d axis(cv::normalize(randomNonZeroPoint(-1., 1.)));
+  const double half_angle(randomValue(-M_PI / 2., M_PI / 2.));
 
   // quaternion from rotation axis and angle
   geometry_msgs::Quaternion orientation;
@@ -55,22 +29,9 @@ geometry_msgs::Quaternion randomOrientation() {
   return orientation;
 }
 
-cv::Mat randomDirection(const int width, const int height) {
-  cv::Mat direction(width, height, CV_32FC3);
-  for (int x = 0; x < width; ++x) {
-    for (int y = 0; y < height; ++y) {
-      cv::Vec3f &d(direction.at< cv::Vec3f >(y, x));
-      d[0] = g_rng.uniform(-1., 1.);
-      d[1] = g_rng.uniform(-1., 1.);
-      d[2] = g_rng.uniform(-1., 1.);
-    }
-  }
-  return direction;
-}
-
 // geometry_msgs::Point from transform matrix and source coordinates
-geometry_msgs::Point transformPoint(const tf::Transform &transform, const double x, const double y,
-                                    const double z) {
+geometry_msgs::Point transformedPointMsg(const double x, const double y, const double z,
+                                         const tf::Transform &transform) {
   const tf::Vector3 tf_point(transform(tf::Vector3(x, y, z)));
   geometry_msgs::Point ros_point;
   ros_point.x = tf_point[0];
@@ -80,8 +41,8 @@ geometry_msgs::Point transformPoint(const tf::Transform &transform, const double
 }
 
 // 1-line construction of shape_msgs::MeshTriangle
-shape_msgs::MeshTriangle meshTriangle(const unsigned int id0, const unsigned int id1,
-                                      const unsigned int id2) {
+shape_msgs::MeshTriangle meshTriangleMsg(const unsigned int id0, const unsigned int id1,
+                                         const unsigned int id2) {
   shape_msgs::MeshTriangle triangle;
   triangle.vertex_indices[0] = id0;
   triangle.vertex_indices[1] = id1;
@@ -90,7 +51,7 @@ shape_msgs::MeshTriangle meshTriangle(const unsigned int id0, const unsigned int
 }
 
 // convert DEM to mesh, assuming DEM size is (1, 1)
-irp::MeshStamped toMesh(const nav_msgs::OccupancyGrid &grid) {
+irp::MeshStamped toMeshMsg(const nav_msgs::OccupancyGrid &grid) {
   irp::MeshStamped mesh;
   mesh.header = grid.header;
 
@@ -99,49 +60,46 @@ irp::MeshStamped toMesh(const nav_msgs::OccupancyGrid &grid) {
 
   const double lxy(grid.info.resolution);
   const double lz(grid.data[0] / 100.);
-  mesh.mesh.vertices.push_back(transformPoint(dem2tf, 0., 0., 0.));
-  mesh.mesh.vertices.push_back(transformPoint(dem2tf, lxy, 0., 0.));
-  mesh.mesh.vertices.push_back(transformPoint(dem2tf, lxy, lxy, 0.));
-  mesh.mesh.vertices.push_back(transformPoint(dem2tf, 0., lxy, 0.));
-  mesh.mesh.vertices.push_back(transformPoint(dem2tf, 0., 0., lz));
-  mesh.mesh.vertices.push_back(transformPoint(dem2tf, lxy, 0., lz));
-  mesh.mesh.vertices.push_back(transformPoint(dem2tf, lxy, lxy, lz));
-  mesh.mesh.vertices.push_back(transformPoint(dem2tf, 0., lxy, lz));
+  mesh.mesh.vertices.push_back(transformedPointMsg(0., 0., 0., dem2tf));
+  mesh.mesh.vertices.push_back(transformedPointMsg(lxy, 0., 0., dem2tf));
+  mesh.mesh.vertices.push_back(transformedPointMsg(lxy, lxy, 0., dem2tf));
+  mesh.mesh.vertices.push_back(transformedPointMsg(0., lxy, 0., dem2tf));
+  mesh.mesh.vertices.push_back(transformedPointMsg(0., 0., lz, dem2tf));
+  mesh.mesh.vertices.push_back(transformedPointMsg(lxy, 0., lz, dem2tf));
+  mesh.mesh.vertices.push_back(transformedPointMsg(lxy, lxy, lz, dem2tf));
+  mesh.mesh.vertices.push_back(transformedPointMsg(0., lxy, lz, dem2tf));
 
   // bottom
-  mesh.mesh.triangles.push_back(meshTriangle(0, 1, 2));
-  mesh.mesh.triangles.push_back(meshTriangle(0, 2, 3));
+  mesh.mesh.triangles.push_back(meshTriangleMsg(0, 1, 2));
+  mesh.mesh.triangles.push_back(meshTriangleMsg(0, 2, 3));
   // top
-  mesh.mesh.triangles.push_back(meshTriangle(4, 5, 6));
-  mesh.mesh.triangles.push_back(meshTriangle(4, 6, 7));
+  mesh.mesh.triangles.push_back(meshTriangleMsg(4, 5, 6));
+  mesh.mesh.triangles.push_back(meshTriangleMsg(4, 6, 7));
   // front
-  mesh.mesh.triangles.push_back(meshTriangle(0, 3, 7));
-  mesh.mesh.triangles.push_back(meshTriangle(0, 4, 7));
+  mesh.mesh.triangles.push_back(meshTriangleMsg(0, 3, 7));
+  mesh.mesh.triangles.push_back(meshTriangleMsg(0, 4, 7));
   // back
-  mesh.mesh.triangles.push_back(meshTriangle(1, 2, 6));
-  mesh.mesh.triangles.push_back(meshTriangle(1, 5, 6));
+  mesh.mesh.triangles.push_back(meshTriangleMsg(1, 2, 6));
+  mesh.mesh.triangles.push_back(meshTriangleMsg(1, 5, 6));
   // left
-  mesh.mesh.triangles.push_back(meshTriangle(0, 1, 5));
-  mesh.mesh.triangles.push_back(meshTriangle(0, 4, 5));
+  mesh.mesh.triangles.push_back(meshTriangleMsg(0, 1, 5));
+  mesh.mesh.triangles.push_back(meshTriangleMsg(0, 4, 5));
   // right
-  mesh.mesh.triangles.push_back(meshTriangle(2, 3, 7));
-  mesh.mesh.triangles.push_back(meshTriangle(2, 6, 7));
+  mesh.mesh.triangles.push_back(meshTriangleMsg(2, 3, 7));
+  mesh.mesh.triangles.push_back(meshTriangleMsg(2, 6, 7));
 
   return mesh;
 }
 
 TEST(DEMSurfaceModel, compareMeshIntersection) {
-  // random ray- and dem-origin which are apart 1.0 each other
-  geometry_msgs::Point ray_origin, dem_origin;
-  twoRandomPoints(ray_origin, dem_origin);
-
   // 1-box DEM at random pose
   nav_msgs::OccupancyGrid dem;
+  const cv::Vec3f dem_origin(randomPoint(-1., 1.));
   dem.info.resolution = 0.5;
   dem.info.width = 1;
   dem.info.height = 1;
-  dem.info.origin.position = dem_origin;
-  dem.info.origin.orientation = randomOrientation();
+  dem.info.origin.position = toPointMsg(dem_origin);
+  dem.info.origin.orientation = randomOrientationMsg();
   dem.data.resize(1, 100);
 
   // initialize tested model with random DEM
@@ -152,27 +110,26 @@ TEST(DEMSurfaceModel, compareMeshIntersection) {
   // initialize comparative model with a mesh generated from the same DEM
   irp::MeshSurfaceModel mesh_model;
   mesh_model.init("mesh", ros::M_string(), ros::V_string());
-  mesh_model.update(toMesh(dem));
+  mesh_model.update(toMeshMsg(dem));
 
-  // random ray directions
-  const int width(100), height(100);
-  const cv::Mat ray_direction(randomDirection(width, height));
+  // random ray whose source is apart 1.0 from DEM origin and has random direction
+  const cv::Size size(100, 100);
+  const cv::Vec3f ray_origin(dem_origin + cv::normalize(randomNonZeroPoint(-1, 1.)));
+  const cv::Mat ray_direction(randomNonZeroPoints(size, -1., 1.));
 
   // calculate intersection using tested model
   cv::Mat dem_intersection, dem_mask(cv::Mat::ones(ray_direction.size(), CV_8UC1));
-  dem_model.intersection(cv::Vec3f(ray_origin.x, ray_origin.y, ray_origin.z), ray_direction,
-                         dem_intersection, dem_mask);
+  dem_model.intersection(ray_origin, ray_direction, dem_intersection, dem_mask);
   EXPECT_GT(cv::countNonZero(dem_mask), 0);
 
   // calculate intersection using comparative model
   cv::Mat mesh_intersection, mesh_mask(cv::Mat::ones(ray_direction.size(), CV_8UC1));
-  mesh_model.intersection(cv::Vec3f(ray_origin.x, ray_origin.y, ray_origin.z), ray_direction,
-                          mesh_intersection, mesh_mask);
+  mesh_model.intersection(ray_origin, ray_direction, mesh_intersection, mesh_mask);
   EXPECT_GT(cv::countNonZero(mesh_mask), 0);
 
   // compare results from tested and comparative models
-  for (int x = 0; x < width; ++x) {
-    for (int y = 0; y < height; ++y) {
+  for (int x = 0; x < size.width; ++x) {
+    for (int y = 0; y < size.height; ++y) {
       // compare mask values
       const unsigned char dm(dem_mask.at< unsigned char >(y, x));
       const unsigned char mm(mesh_mask.at< unsigned char >(y, x));
@@ -181,9 +138,7 @@ TEST(DEMSurfaceModel, compareMeshIntersection) {
       if (dm != 0 && mm != 0) {
         const cv::Vec3f di(dem_intersection.at< cv::Vec3f >(y, x));
         const cv::Vec3f mi(mesh_intersection.at< cv::Vec3f >(y, x));
-        EXPECT_NEAR(di[0], mi[0], 0.001);
-        EXPECT_NEAR(di[1], mi[1], 0.001);
-        EXPECT_NEAR(di[2], mi[2], 0.001);
+        EXPECT_NEAR(cv::norm(di, mi), 0., 0.001 * cv::norm(mi));
       }
     }
   }

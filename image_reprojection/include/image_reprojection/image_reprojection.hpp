@@ -257,7 +257,8 @@ private:
       // publish the destination image
       dst_camera_publisher_.publish(dst_image.toImageMsg(), dst_camera_info);
     } catch (const std::exception &ex) {
-      NODELET_ERROR_STREAM("onDstCameraEvent: " << ex.what());
+      // use WARN-THROTTLE because this function is periodically executed and error may be temporary
+      NODELET_WARN_STREAM_THROTTLE(1., "onDstCameraEvent: " << ex.what());
     }
   }
 
@@ -265,7 +266,8 @@ private:
     try {
       updateMap();
     } catch (const std::exception &ex) {
-      NODELET_ERROR_STREAM("onMapUpdateEvent: " << ex.what());
+      // use WARN-THROTTLE because this function is periodically executed and error may be temporary
+      NODELET_WARN_STREAM_THROTTLE(1., "onMapUpdateEvent: " << ex.what());
     }
   }
 

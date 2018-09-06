@@ -40,13 +40,14 @@ public:
     // frame id of arguments of intersection()
     tf_frame_id_ = dem.header.frame_id;
 
-    // frame conversion
+    // frame conversion between DEM and tf frames
     tf::poseMsgToTF(dem.info.origin, dem2tf_);
+    tf2dem_ = dem2tf_.inverse();
 
-    //
+    // resolution of DEM (xy)
     resolution_ = dem.info.resolution;
 
-    //
+    // elevation data (z)
     data_.create(dem.info.width, dem.info.height, CV_64FC1);
     const double data_scale((max_data_ - min_data_) / 100.);
     for (int xid = 0; xid < dem.info.width; ++xid) {
@@ -77,9 +78,8 @@ private:
 
     boost::shared_lock< boost::shared_mutex > read_lock(mutex_);
 
-    const tf::Transform tf2dem(dem2tf_.inverse());
-    multirayDEMIntersection(ir::transform(src_origin, tf2dem),
-                            ir::transform(src_direction, tf2dem.getBasis(), mask), dst, mask);
+    multirayDEMIntersection(ir::transform(src_origin, tf2dem_),
+                            ir::transform(src_direction, tf2dem_.getBasis(), mask), dst, mask);
     dst = ir::transform(dst, dem2tf_, mask);
   }
 
@@ -206,7 +206,7 @@ private:
 
   // info from nav_msgs::OccupancyGrid
   std::string tf_frame_id_;
-  tf::Transform dem2tf_;
+  tf::Transform dem2tf_, tf2dem_;
   double resolution_;
   cv::Mat data_;
 

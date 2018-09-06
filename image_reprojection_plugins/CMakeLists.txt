@@ -8,6 +8,7 @@ find_package(
   catkin REQUIRED COMPONENTS
   camera_info_manager
   cv_bridge
+  geometry_msgs
   image_reprojection
   message_generation
   nav_msgs
@@ -64,6 +65,8 @@ find_package(
 add_message_files(
   FILES
   MeshStamped.msg
+  PlaneStamped.msg
+  SphereStamped.msg
 )
 
 ## Generate services in the 'srv' folder
@@ -83,6 +86,7 @@ add_message_files(
 ## Generate added messages and services with any dependencies listed here
 generate_messages(
   DEPENDENCIES
+  geometry_msgs
   shape_msgs
   std_msgs
 )
@@ -125,6 +129,7 @@ catkin_package(
   CATKIN_DEPENDS 
   camera_info_manager
   cv_bridge 
+  geometry_msgs
   image_reprojection 
   message_runtime
   nav_msgs 
@@ -159,6 +164,8 @@ add_library(
   image_reprojection_surface_model_plugins
   src/dem_surface_model_plugin.cpp
   src/mesh_surface_model_plugin.cpp
+  src/plane_surface_model_plugin.cpp
+  src/sphere_surface_model_plugin.cpp
 )
 add_library(
   image_reprojection_nodelet_plugins
@@ -178,11 +185,27 @@ add_executable(
   static_mesh_publisher 
   src/static_mesh_publisher.cpp
 )
+add_executable(
+  static_plane_publisher 
+  src/static_plane_publisher.cpp
+)
+add_executable(
+  static_sphere_publisher 
+  src/static_sphere_publisher.cpp
+)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
 add_dependencies(
   static_mesh_publisher 
+  ${image_reprojection_plugins_EXPORTED_TARGETS} 
+)
+add_dependencies(
+  static_plane_publisher 
+  ${image_reprojection_plugins_EXPORTED_TARGETS} 
+)
+add_dependencies(
+  static_sphere_publisher 
   ${image_reprojection_plugins_EXPORTED_TARGETS} 
 )
 
@@ -205,6 +228,14 @@ target_link_libraries(
 )
 target_link_libraries(
   static_mesh_publisher
+  ${catkin_LIBRARIES}
+)
+target_link_libraries(
+  static_plane_publisher
+  ${catkin_LIBRARIES}
+)
+target_link_libraries(
+  static_sphere_publisher
   ${catkin_LIBRARIES}
 )
 
@@ -261,6 +292,18 @@ if(TARGET test_camera_models)
 endif()
 
 catkin_add_gtest(
+  test_dem_surface_model 
+  test/test_dem_surface_model.cpp
+)
+if(TARGET test_dem_surface_model)
+  target_link_libraries(
+    test_dem_surface_model
+    ${catkin_LIBRARIES}
+    ${OpenCV_LIBRARIES}
+  )
+endif()
+
+catkin_add_gtest(
   test_mesh_surface_model 
   test/test_mesh_surface_model.cpp
 )
@@ -273,12 +316,24 @@ if(TARGET test_mesh_surface_model)
 endif()
 
 catkin_add_gtest(
-  test_dem_surface_model 
-  test/test_dem_surface_model.cpp
+  test_plane_surface_model 
+  test/test_plane_surface_model.cpp
 )
-if(TARGET test_dem_surface_model)
+if(TARGET test_plane_surface_model)
   target_link_libraries(
-    test_dem_surface_model
+    test_plane_surface_model
+    ${catkin_LIBRARIES}
+    ${OpenCV_LIBRARIES}
+  )
+endif()
+
+catkin_add_gtest(
+  test_sphere_surface_model 
+  test/test_sphere_surface_model.cpp
+)
+if(TARGET test_sphere_surface_model)
+  target_link_libraries(
+    test_sphere_surface_model
     ${catkin_LIBRARIES}
     ${OpenCV_LIBRARIES}
   )
