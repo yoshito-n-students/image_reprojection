@@ -193,6 +193,10 @@ add_executable(
   static_sphere_publisher 
   src/static_sphere_publisher.cpp
 )
+add_executable(
+  tf_tracking_gimbal
+  src/tf_tracking_gimbal.cpp
+)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
@@ -236,6 +240,10 @@ target_link_libraries(
 )
 target_link_libraries(
   static_sphere_publisher
+  ${catkin_LIBRARIES}
+)
+target_link_libraries(
+  tf_tracking_gimbal
   ${catkin_LIBRARIES}
 )
 
