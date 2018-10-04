@@ -48,6 +48,10 @@ A ROS nodelet to reproject image as if viewing from different viewpoint or with 
 **~dst_camera/info_file** (string, required)
 * initial camera info of the destination camera will be loaded from this file by using camera_calibration_parsers::readCalibration()
 
+**~dst_camera/frame_id** (string, optional)
+* frame id of the destination camera
+* if not set, the camera name in the info file will be used as the frame id
+
 **~dst_camera/encoding** (string, default: "bgr8")
 * desired encoding of destination camera images
 * conversion from encoding of source camera images to this encoding must be possible

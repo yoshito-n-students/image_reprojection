@@ -151,6 +151,7 @@ private:
       CV_Assert(pnh.getParam("dst_camera/info_file", info_file));
       sensor_msgs::CameraInfo info;
       CV_Assert(camera_calibration_parsers::readCalibration(info_file, info.header.frame_id, info));
+      pnh.getParam("dst_camera/frame_id", info.header.frame_id);
       dst_camera_model_->fromCameraInfo(info);
     }
 
