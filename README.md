@@ -34,7 +34,7 @@ A ROS nodelet to reproject image as if viewing from different viewpoint or with 
 * name or type of the source camera model plugin whose base type is image_reprojection::CameraModel
 * other parameters for the source camera model can be defined in the same namespace
 
-**~src_cameraN/image_transport** (string, default: "raw")
+**~src_cameraN/image_transport** <N = 1, 2, ..> (string, default: "raw")
 * transport type for images of the Nth source camera
 
 **~surface/model** (string, required)
