@@ -149,9 +149,10 @@ private:
     {
       std::string info_file;
       CV_Assert(pnh.getParam("dst_camera/info_file", info_file));
+      std::string name;
       sensor_msgs::CameraInfo info;
-      CV_Assert(camera_calibration_parsers::readCalibration(info_file, info.header.frame_id, info));
-      pnh.getParam("dst_camera/frame_id", info.header.frame_id);
+      CV_Assert(camera_calibration_parsers::readCalibration(info_file, name, info));
+      info.header.frame_id = pnh.param< std::string >("dst_camera/frame_id", name);
       dst_camera_model_->fromCameraInfo(info);
     }
 
