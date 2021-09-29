@@ -115,8 +115,8 @@ private:
   virtual void onProjectPixelTo3dRay(const cv::Mat &src, cv::Mat &dst, cv::Mat &mask) const = 0;
 };
 
-typedef boost::shared_ptr< CameraModel > CameraModelPtr;
-typedef boost::shared_ptr< const CameraModel > CameraModelConstPtr;
+typedef boost::shared_ptr<CameraModel> CameraModelPtr;
+typedef boost::shared_ptr<const CameraModel> CameraModelConstPtr;
 
 } // namespace image_reprojection
 

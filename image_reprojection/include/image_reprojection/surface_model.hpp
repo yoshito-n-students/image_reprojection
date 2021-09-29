@@ -90,9 +90,9 @@ public:
 
     for (int x = 0; x < mask.size().width; ++x) {
       for (int y = 0; y < mask.size().height; ++y) {
-        unsigned char &m(mask.at< unsigned char >(y, x));
-        const cv::Vec3f &a(actual.at< cv::Vec3f >(y, x));
-        const cv::Vec3f &e(expected.at< cv::Vec3f >(y, x));
+        unsigned char &m = mask.at<unsigned char>(y, x);
+        const cv::Vec3f &a = actual.at<cv::Vec3f>(y, x);
+        const cv::Vec3f &e = expected.at<cv::Vec3f>(y, x);
         m = (m != 0 && cv::norm(a, e) <= abs_error) ? 1 : 0;
       }
     }
@@ -118,8 +118,8 @@ private:
                               cv::Mat &dst, cv::Mat &mask) const = 0;
 };
 
-typedef boost::shared_ptr< SurfaceModel > SurfaceModelPtr;
-typedef boost::shared_ptr< const SurfaceModel > SurfaceModelConstPtr;
+typedef boost::shared_ptr<SurfaceModel> SurfaceModelPtr;
+typedef boost::shared_ptr<const SurfaceModel> SurfaceModelConstPtr;
 
 } // namespace image_reprojection
 
