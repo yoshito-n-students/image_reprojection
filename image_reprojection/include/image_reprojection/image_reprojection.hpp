@@ -1,6 +1,7 @@
 #ifndef IMAGE_REPROJECTION_IMAGE_REPROJECTION_HPP
 #define IMAGE_REPROJECTION_IMAGE_REPROJECTION_HPP
 
+#include <memory>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -31,7 +32,6 @@
 
 #include <boost/bind.hpp>
 #include <boost/lexical_cast.hpp>
-#include <boost/scoped_ptr.hpp>
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -64,10 +64,10 @@ private:
   // initialization
   //
 
-  virtual void onInit() {
+  virtual void onInit() override {
     // get node handles
-    ros::NodeHandle &nh(getNodeHandle());
-    ros::NodeHandle &pnh(getPrivateNodeHandle());
+    ros::NodeHandle &nh = getNodeHandle();
+    ros::NodeHandle &pnh = getPrivateNodeHandle();
     image_transport::ImageTransport it(nh);
 
     //
@@ -75,7 +75,7 @@ private:
     //
 
     for (int i = 0; true; ++i) {
-      const std::string i_str(boost::lexical_cast< std::string >(i));
+      const std::string i_str(boost::lexical_cast<std::string>(i));
       if (!pnh.hasParam("src_camera" + i_str + "/model")) {
         break;
       }
@@ -129,7 +129,7 @@ private:
 
     // load parameters
     dst_image_encoding_ =
-        pnh.param< std::string >("dst_camera/encoding", sensor_msgs::image_encodings::BGR8);
+        pnh.param<std::string>("dst_camera/encoding", sensor_msgs::image_encodings::BGR8);
     map_binning_x_ = pnh.param("map_update/binning_x", 8);
     map_binning_y_ = pnh.param("map_update/binning_y", 8);
 
@@ -152,7 +152,7 @@ private:
       std::string name;
       sensor_msgs::CameraInfo info;
       CV_Assert(camera_calibration_parsers::readCalibration(info_file, name, info));
-      info.header.frame_id = pnh.param< std::string >("dst_camera/frame_id", name);
+      info.header.frame_id = pnh.param<std::string>("dst_camera/frame_id", name);
       dst_camera_model_->fromCameraInfo(info);
     }
 
@@ -287,7 +287,7 @@ private:
     cv::Mat binned_map(binned_map_size, CV_32FC2);
     for (int x = 0; x < binned_map_size.width; ++x) {
       for (int y = 0; y < binned_map_size.height; ++y) {
-        binned_map.at< cv::Point2f >(y, x) =
+        binned_map.at<cv::Point2f>(y, x) =
             cv::Point2f((dst_image_size.width - 1.) * x / (binned_map_size.width - 1.),
                         (dst_image_size.height - 1.) * y / (binned_map_size.height - 1.));
       }
@@ -370,13 +370,13 @@ private:
 
 private:
   // model loaders
-  pluginlib::ClassLoader< CameraModel > camera_model_loader_;
-  pluginlib::ClassLoader< SurfaceModel > surface_model_loader_;
+  pluginlib::ClassLoader<CameraModel> camera_model_loader_;
+  pluginlib::ClassLoader<SurfaceModel> surface_model_loader_;
 
   // src cameras
-  std::vector< image_transport::CameraSubscriber > src_camera_subscribers_;
-  std::vector< CameraModelPtr > src_camera_models_;
-  std::vector< cv_bridge::CvImageConstPtr > src_images_;
+  std::vector<image_transport::CameraSubscriber> src_camera_subscribers_;
+  std::vector<CameraModelPtr> src_camera_models_;
+  std::vector<cv_bridge::CvImageConstPtr> src_images_;
 
   // surface
   ros::Subscriber surface_subscriber_;
@@ -391,10 +391,10 @@ private:
 
   // mapping between src and dst image pixels
   ros::Timer map_timer_;
-  boost::scoped_ptr< tf::TransformListener > tf_listener_;
+  std::unique_ptr<tf::TransformListener> tf_listener_;
   int map_binning_x_, map_binning_y_;
-  std::vector< cv::Mat > maps_;
-  std::vector< cv::Mat > masks_;
+  std::vector<cv::Mat> maps_;
+  std::vector<cv::Mat> masks_;
 };
 
 } // namespace image_reprojection
