@@ -24,13 +24,11 @@ cv::Mat transform(const cv::Mat &src, const TransformInfo &info, const cv::Mat &
   CV_Assert(src.size() == mask.size());
 
   cv::Mat dst(src.size(), src.type());
-  for (int x = 0; x < src.size().width; ++x) {
-    for (int y = 0; y < src.size().height; ++y) {
-      if (mask.at<unsigned char>(y, x) != 0) {
-        dst.at<cv::Vec3f>(y, x) = transform(src.at<cv::Vec3f>(y, x), info);
-      }
+  mask.forEach<uchar>([&src, &dst, &info](const uchar m, const int *const pos) {
+    if (m != 0) {
+      *dst.ptr<cv::Vec3f>(pos[0], pos[1]) = transform(*src.ptr<cv::Vec3f>(pos[0], pos[1]), info);
     }
-  }
+  });
   return dst;
 }
 
