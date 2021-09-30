@@ -29,7 +29,7 @@ public:
     CV_Assert(camera_info.distortion_model == "fisheye");
     CV_Assert(camera_info.D.empty() || camera_info.D.size() == 4);
 
-    boost::unique_lock< boost::shared_mutex > write_lock(mutex_);
+    boost::unique_lock<boost::shared_mutex> write_lock(mutex_);
 
     // copy entire camera info to return it via toCameraInfo()
     camera_info_ = camera_info;
@@ -78,13 +78,13 @@ public:
   }
 
   virtual sensor_msgs::CameraInfoPtr toCameraInfo() const {
-    boost::shared_lock< boost::shared_mutex > read_lock(mutex_);
-    return boost::make_shared< sensor_msgs::CameraInfo >(camera_info_);
+    boost::shared_lock<boost::shared_mutex> read_lock(mutex_);
+    return boost::make_shared<sensor_msgs::CameraInfo>(camera_info_);
   }
 
 private:
   virtual void onInit() {
-    boost::unique_lock< boost::shared_mutex > write_lock(mutex_);
+    boost::unique_lock<boost::shared_mutex> write_lock(mutex_);
 
     ros::NodeHandle &pnh(getPrivateNodeHandle());
     fov_ = pnh.param("fov", M_PI);
@@ -92,7 +92,7 @@ private:
   }
 
   virtual void onProject3dToPixel(const cv::Mat &src, cv::Mat &dst, cv::Mat &mask) const {
-    boost::shared_lock< boost::shared_mutex > read_lock(mutex_);
+    boost::shared_lock<boost::shared_mutex> read_lock(mutex_);
 
     // allocate dst pixels
     dst.create(src.size(), CV_32FC2);
@@ -102,9 +102,9 @@ private:
     // if update of dst pixel succeeded, set corresponding mask to 1, otherwise 0
     for (int x = 0; x < mask.size().width; ++x) {
       for (int y = 0; y < mask.size().height; ++y) {
-        unsigned char &m(mask.at< unsigned char >(y, x));
-        const cv::Point3f &s(src.at< cv::Point3f >(y, x));
-        cv::Point2f &d(dst.at< cv::Point2f >(y, x));
+        unsigned char &m(mask.at<unsigned char>(y, x));
+        const cv::Point3f &s(src.at<cv::Point3f>(y, x));
+        cv::Point2f &d(dst.at<cv::Point2f>(y, x));
         m = (m != 0 && project3dPointToPixel(s, d)) ? 1 : 0;
       }
     }
@@ -150,7 +150,7 @@ private:
   }
 
   virtual void onProjectPixelTo3dRay(const cv::Mat &src, cv::Mat &dst, cv::Mat &mask) const {
-    boost::shared_lock< boost::shared_mutex > read_lock(mutex_);
+    boost::shared_lock<boost::shared_mutex> read_lock(mutex_);
 
     // allocate dst points
     dst.create(src.size(), CV_32FC3);
@@ -160,9 +160,9 @@ private:
     // if update of dst point succeeded, set corresponding mask to 1, otherwise 0
     for (int x = 0; x < src.size().width; ++x) {
       for (int y = 0; y < src.size().height; ++y) {
-        unsigned char &m(mask.at< unsigned char >(y, x));
-        const cv::Point2f &s(src.at< cv::Point2f >(y, x));
-        cv::Point3f &d(dst.at< cv::Point3f >(y, x));
+        unsigned char &m(mask.at<unsigned char>(y, x));
+        const cv::Point2f &s(src.at<cv::Point2f>(y, x));
+        cv::Point3f &d(dst.at<cv::Point3f>(y, x));
         m = (m != 0 && projectPixelPointTo3dRay(s, d)) ? 1 : 0;
       }
     }
@@ -198,7 +198,7 @@ private:
             (theta * (1 + k0_theta2 + k1_theta4 + k2_theta6 + k3_theta8) - theta_d) /
             (1 + 3 * k0_theta2 + 5 * k1_theta4 + 7 * k2_theta6 + 9 * k3_theta8));
         theta -= theta_fix;
-        if (std::fabs(theta_fix) < std::numeric_limits< double >::epsilon()) {
+        if (std::fabs(theta_fix) < std::numeric_limits<double>::epsilon()) {
           break;
         }
       }
@@ -223,8 +223,8 @@ private:
   // ros standard camera info
   sensor_msgs::CameraInfo camera_info_;
   cv::Matx33d camera_matrix_;
-  std::vector< double > dist_coeffs_;
-  cv::Rect_< float > frame_;
+  std::vector<double> dist_coeffs_;
+  cv::Rect_<float> frame_;
 
   // additional info from rosparam
   double fov_;

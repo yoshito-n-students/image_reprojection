@@ -29,13 +29,13 @@ int main(int argc, char *argv[]) {
   ros::NodeHandle nh, pnh("~");
 
   irp::SphereStamped sphere;
-  sphere.header.frame_id = pnh.param< std::string >("frame_id", "");
+  sphere.header.frame_id = pnh.param<std::string>("frame_id", "");
   sphere.center = toPoint(pnh.param("center", XmlRpc::XmlRpcValue()));
   sphere.radius = pnh.param("radius", 1.);
   ROS_INFO_STREAM(sphere);
 
   ros::Publisher publisher;
-  publisher = nh.advertise< irp::SphereStamped >("sphere", 1, true);
+  publisher = nh.advertise<irp::SphereStamped>("sphere", 1, true);
 
   ros::Rate rate(pnh.param("rate", 10.));
   while (ros::ok()) {

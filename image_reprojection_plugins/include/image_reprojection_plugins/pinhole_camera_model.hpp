@@ -32,7 +32,7 @@ public:
               camera_info.D.size() == 8 || camera_info.D.size() == 12 ||
               camera_info.D.size() == 14);
 
-    boost::unique_lock< boost::shared_mutex > write_lock(mutex_);
+    boost::unique_lock<boost::shared_mutex> write_lock(mutex_);
 
     // copy entire camera info to return it via toCameraInfo()
     camera_info_ = camera_info;
@@ -77,15 +77,15 @@ public:
   }
 
   virtual sensor_msgs::CameraInfoPtr toCameraInfo() const {
-    boost::shared_lock< boost::shared_mutex > read_lock(mutex_);
-    return boost::make_shared< sensor_msgs::CameraInfo >(camera_info_);
+    boost::shared_lock<boost::shared_mutex> read_lock(mutex_);
+    return boost::make_shared<sensor_msgs::CameraInfo>(camera_info_);
   }
 
 private:
   virtual void onInit() {}
 
   virtual void onProject3dToPixel(const cv::Mat &src, cv::Mat &dst, cv::Mat &mask) const {
-    boost::shared_lock< boost::shared_mutex > read_lock(mutex_);
+    boost::shared_lock<boost::shared_mutex> read_lock(mutex_);
 
     // project 3D points in the camera coordinate into the 2D image coordinate
     cv::projectPoints(src.reshape(3, src.total()), cv::Vec3d::all(0.), cv::Vec3d::all(0.),
@@ -99,16 +99,16 @@ private:
     //   - output pixel is in the image frame
     for (int x = 0; x < mask.size().width; ++x) {
       for (int y = 0; y < mask.size().height; ++y) {
-        unsigned char &m(mask.at< unsigned char >(y, x));
-        const cv::Point3f &s(src.at< cv::Point3f >(y, x));
-        const cv::Point2f &d(dst.at< cv::Point2f >(y, x));
+        unsigned char &m(mask.at<unsigned char>(y, x));
+        const cv::Point3f &s(src.at<cv::Point3f>(y, x));
+        const cv::Point2f &d(dst.at<cv::Point2f>(y, x));
         m = (m != 0 && s.z >= 0 && frame_.contains(d)) ? 1 : 0;
       }
     }
   }
 
   virtual void onProjectPixelTo3dRay(const cv::Mat &src, cv::Mat &dst, cv::Mat &mask) const {
-    boost::shared_lock< boost::shared_mutex > read_lock(mutex_);
+    boost::shared_lock<boost::shared_mutex> read_lock(mutex_);
 
     // reproject 2D points in the image coordinate to the camera coordinate
     cv::Mat dst_2d;
@@ -128,8 +128,8 @@ private:
     //   - corresponding input pixel is in the image frame
     for (int x = 0; x < mask.size().width; ++x) {
       for (int y = 0; y < mask.size().height; ++y) {
-        unsigned char &m(mask.at< unsigned char >(y, x));
-        const cv::Point2f &s(src.at< cv::Point2f >(y, x));
+        unsigned char &m(mask.at<unsigned char>(y, x));
+        const cv::Point2f &s(src.at<cv::Point2f>(y, x));
         m = (m != 0 && frame_.contains(s)) ? 1 : 0;
       }
     }
@@ -139,8 +139,8 @@ private:
   mutable boost::shared_mutex mutex_;
   sensor_msgs::CameraInfo camera_info_;
   cv::Matx33d camera_matrix_;
-  std::vector< double > dist_coeffs_;
-  cv::Rect_< float > frame_;
+  std::vector<double> dist_coeffs_;
+  cv::Rect_<float> frame_;
 };
 
 } // namespace image_reprojection_plugins

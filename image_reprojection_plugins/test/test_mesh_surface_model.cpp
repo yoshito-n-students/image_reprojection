@@ -49,12 +49,12 @@ void randomIntersection(const cv::Size &dsize, const irp::MeshStamped &mesh, cv:
       //
       const double b1(randomValue(-0.5, 1.5)), b2(randomValue(-0.5, 1.5));
       const cv::Vec3f p(v0 + b1 * e1 + b2 * e2);
-      intersection.at< cv::Vec3f >(y, x) = p;
+      intersection.at<cv::Vec3f>(y, x) = p;
       //
       const double d_scale(randomNonZeroValue(-1., 2.));
-      ray_direction.at< cv::Vec3f >(y, x) = d_scale * (p - ray_origin);
+      ray_direction.at<cv::Vec3f>(y, x) = d_scale * (p - ray_origin);
       //
-      mask.at< unsigned char >(y, x) = (b1 >= 0 && b2 >= 0 && b1 + b2 <= 1 && d_scale >= 0) ? 1 : 0;
+      mask.at<unsigned char>(y, x) = (b1 >= 0 && b2 >= 0 && b1 + b2 <= 1 && d_scale >= 0) ? 1 : 0;
     }
   }
 }
@@ -81,13 +81,12 @@ TEST(MeshSurfaceModel, randomIntersection) {
   for (int x = 0; x < mask.size().width; ++x) {
     for (int y = 0; y < mask.size().height; ++y) {
       // comapre mask values
-      const unsigned char m(mask.at< unsigned char >(y, x)),
-          tm(true_mask.at< unsigned char >(y, x));
+      const unsigned char m(mask.at<unsigned char>(y, x)), tm(true_mask.at<unsigned char>(y, x));
       EXPECT_TRUE((m != 0 && tm != 0) || (m == 0 && tm == 0));
       // compare intersection points
       if (m != 0 && tm != 0) {
-        const cv::Vec3f i(intersection.at< cv::Vec3f >(y, x)),
-            ti(true_intersection.at< cv::Vec3f >(y, x));
+        const cv::Vec3f i(intersection.at<cv::Vec3f>(y, x)),
+            ti(true_intersection.at<cv::Vec3f>(y, x));
         EXPECT_NEAR(cv::norm(i, ti), 0., 0.001 * cv::norm(ti));
       }
     }

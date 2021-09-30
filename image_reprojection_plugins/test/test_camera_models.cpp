@@ -32,14 +32,14 @@ void test3dToPixelTo3dRay(const ir::CameraModel &model, const cv::Mat &points1) 
       // expectation:
       //   if point-to-pixel projection is valid, the opposite projection is also valid.
       //   so mask1 for former projection and mask2 for latter should match.
-      const unsigned char m1(mask1.at< unsigned char >(y, x));
-      const unsigned char m2(mask2.at< unsigned char >(y, x));
+      const unsigned char m1(mask1.at<unsigned char>(y, x));
+      const unsigned char m2(mask2.at<unsigned char>(y, x));
       EXPECT_TRUE((m1 == 0 && m2 == 0) || (m1 != 0 && m2 != 0));
       // expectation:
       //   direction of source point and final ray should match.
       if (m1 != 0) {
-        const cv::Point3f pn1(cv::normalize(points1.at< cv::Vec3f >(y, x)));
-        const cv::Point3f pn2(cv::normalize(points2.at< cv::Vec3f >(y, x)));
+        const cv::Point3f pn1(cv::normalize(points1.at<cv::Vec3f>(y, x)));
+        const cv::Point3f pn2(cv::normalize(points2.at<cv::Vec3f>(y, x)));
         EXPECT_NEAR(pn1.x, pn2.x, 0.001);
         EXPECT_NEAR(pn1.y, pn2.y, 0.001);
         EXPECT_NEAR(pn1.z, pn2.z, 0.001);
@@ -66,14 +66,14 @@ void testPixelTo3dRayToPixel(const ir::CameraModel &model, const cv::Mat &pixels
       // expectation:
       //   if pixel-to-ray projection is valid, the opposite projection is also valid.
       //   so mask1 for former projection and mask2 for latter should match.
-      const unsigned char m1(mask1.at< unsigned char >(y, x));
-      const unsigned char m2(mask2.at< unsigned char >(y, x));
+      const unsigned char m1(mask1.at<unsigned char>(y, x));
+      const unsigned char m2(mask2.at<unsigned char>(y, x));
       EXPECT_TRUE((m1 == 0 && m2 == 0) || (m1 != 0 && m2 != 0));
       // expectation:
       //   source and final pixels should match.
       if (m1 != 0) {
-        const cv::Point2f p1(pixels1.at< cv::Point2f >(y, x));
-        const cv::Point2f p2(pixels2.at< cv::Point2f >(y, x));
+        const cv::Point2f p1(pixels1.at<cv::Point2f>(y, x));
+        const cv::Point2f p2(pixels2.at<cv::Point2f>(y, x));
         EXPECT_NEAR(p1.x, p2.x, 0.001);
         EXPECT_NEAR(p1.y, p2.y, 0.001);
         ++n_pixel_comparizon;

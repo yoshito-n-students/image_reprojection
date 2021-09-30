@@ -36,13 +36,13 @@ TEST(SphereSurfaceModel, randomIntersection) {
   // check intersections
   for (int x = 0; x < size.width; ++x) {
     for (int y = 0; y < size.height; ++y) {
-      if (mask.at< unsigned char >(y, x) != 0) {
+      if (mask.at<unsigned char>(y, x) != 0) {
         // intersection point is on the sphere
-        const cv::Vec3f i(intersection.at< cv::Vec3f >(y, x));
+        const cv::Vec3f i(intersection.at<cv::Vec3f>(y, x));
         EXPECT_NEAR(cv::norm(i, center), radius, 0.001 * radius);
 
         // ray direction vector points intersection point
-        const cv::Vec3f d(ray_direction.at< cv::Vec3f >(y, x));
+        const cv::Vec3f d(ray_direction.at<cv::Vec3f>(y, x));
         const double t((i - ray_origin).dot(d) / d.dot(d));
         EXPECT_TRUE(t >= 0.);
         EXPECT_NEAR(cv::norm(i, ray_origin + t * d), 0., 0.001 * cv::norm(t * d));
@@ -51,7 +51,7 @@ TEST(SphereSurfaceModel, randomIntersection) {
         //   x = o + s * d
         //   dot(d, x - c) = 0
         //   (o: ray origin, d: ray direction, c: sphere center)
-        const cv::Vec3f d(ray_direction.at< cv::Vec3f >(y, x));
+        const cv::Vec3f d(ray_direction.at<cv::Vec3f>(y, x));
         const double s((center - ray_origin).dot(d) / d.dot(d));
         EXPECT_TRUE(cv::norm(/* x */ ray_origin + s * d, center) > radius || s < 0.);
       }

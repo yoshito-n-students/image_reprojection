@@ -32,10 +32,10 @@ private:
       ros::NodeHandle left_pnh(pnh, "left");
       image_transport::ImageTransport left_it(left_nh);
 
-      left_frame_id_ = left_pnh.param< std::string >("frame_id", "front_camera");
+      left_frame_id_ = left_pnh.param<std::string>("frame_id", "front_camera");
       left_info_manager_.reset(new camera_info_manager::CameraInfoManager(
-          left_nh, left_pnh.param< std::string >("camera_name", "front_camera"),
-          left_pnh.param< std::string >("camera_info_url", "")));
+          left_nh, left_pnh.param<std::string>("camera_name", "front_camera"),
+          left_pnh.param<std::string>("camera_info_url", "")));
       left_publisher_ = left_it.advertiseCamera("image", 1, true);
     }
 
@@ -45,10 +45,10 @@ private:
       ros::NodeHandle right_pnh(pnh, "right");
       image_transport::ImageTransport right_it(right_nh);
 
-      right_frame_id_ = right_pnh.param< std::string >("frame_id", "back_camera");
+      right_frame_id_ = right_pnh.param<std::string>("frame_id", "back_camera");
       right_info_manager_.reset(new camera_info_manager::CameraInfoManager(
-          right_nh, right_pnh.param< std::string >("camera_name", "back_camera"),
-          right_pnh.param< std::string >("camera_info_url", "")));
+          right_nh, right_pnh.param<std::string>("camera_name", "back_camera"),
+          right_pnh.param<std::string>("camera_info_url", "")));
       right_publisher_ = right_it.advertiseCamera("image", 1, true);
     }
 
@@ -73,7 +73,7 @@ private:
         left_image.image = image->image.colRange(0, image->image.cols / 2);
 
         const sensor_msgs::CameraInfoPtr left_info(
-            boost::make_shared< sensor_msgs::CameraInfo >(left_info_manager_->getCameraInfo()));
+            boost::make_shared<sensor_msgs::CameraInfo>(left_info_manager_->getCameraInfo()));
         left_info->header.stamp = image->header.stamp;
         left_info->header.frame_id = left_frame_id_;
 
@@ -89,7 +89,7 @@ private:
         right_image.image = image->image.colRange(image->image.cols / 2, image->image.cols);
 
         const sensor_msgs::CameraInfoPtr right_info(
-            boost::make_shared< sensor_msgs::CameraInfo >(right_info_manager_->getCameraInfo()));
+            boost::make_shared<sensor_msgs::CameraInfo>(right_info_manager_->getCameraInfo()));
         right_info->header.stamp = image->header.stamp;
         right_info->header.frame_id = right_frame_id_;
 
@@ -105,8 +105,7 @@ private:
 
   image_transport::Subscriber subscriber_;
   image_transport::CameraPublisher left_publisher_, right_publisher_;
-  boost::scoped_ptr< camera_info_manager::CameraInfoManager > left_info_manager_,
-      right_info_manager_;
+  boost::scoped_ptr<camera_info_manager::CameraInfoManager> left_info_manager_, right_info_manager_;
 };
 
 } // namespace image_reprojection_plugins

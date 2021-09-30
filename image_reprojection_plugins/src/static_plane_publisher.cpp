@@ -29,13 +29,13 @@ int main(int argc, char *argv[]) {
   ros::NodeHandle nh, pnh("~");
 
   irp::PlaneStamped plane;
-  plane.header.frame_id = pnh.param< std::string >("frame_id", "");
+  plane.header.frame_id = pnh.param<std::string>("frame_id", "");
   plane.point = toPoint(pnh.param("point", XmlRpc::XmlRpcValue()));
   plane.normal = toPoint(pnh.param("normal", XmlRpc::XmlRpcValue()));
   ROS_INFO_STREAM(plane);
 
   ros::Publisher publisher;
-  publisher = nh.advertise< irp::PlaneStamped >("plane", 1, true);
+  publisher = nh.advertise<irp::PlaneStamped>("plane", 1, true);
 
   ros::Rate rate(pnh.param("rate", 10.));
   while (ros::ok()) {

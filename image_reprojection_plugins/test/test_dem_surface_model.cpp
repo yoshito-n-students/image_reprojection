@@ -131,13 +131,13 @@ TEST(DEMSurfaceModel, compareMeshIntersection) {
   for (int x = 0; x < size.width; ++x) {
     for (int y = 0; y < size.height; ++y) {
       // compare mask values
-      const unsigned char dm(dem_mask.at< unsigned char >(y, x));
-      const unsigned char mm(mesh_mask.at< unsigned char >(y, x));
+      const unsigned char dm(dem_mask.at<unsigned char>(y, x));
+      const unsigned char mm(mesh_mask.at<unsigned char>(y, x));
       EXPECT_TRUE((dm != 0 && mm != 0) || (dm == 0 && mm == 0));
       // compare intersection points
       if (dm != 0 && mm != 0) {
-        const cv::Vec3f di(dem_intersection.at< cv::Vec3f >(y, x));
-        const cv::Vec3f mi(mesh_intersection.at< cv::Vec3f >(y, x));
+        const cv::Vec3f di(dem_intersection.at<cv::Vec3f>(y, x));
+        const cv::Vec3f mi(mesh_intersection.at<cv::Vec3f>(y, x));
         EXPECT_NEAR(cv::norm(di, mi), 0., 0.001 * cv::norm(mi));
       }
     }

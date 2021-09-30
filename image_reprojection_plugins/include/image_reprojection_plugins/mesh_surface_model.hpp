@@ -23,13 +23,13 @@ public:
   virtual ~MeshSurfaceModel() {}
 
   virtual void update(const topic_tools::ShapeShifter &surface) {
-    const MeshStampedConstPtr mesh(surface.instantiate< MeshStamped >());
+    const MeshStampedConstPtr mesh(surface.instantiate<MeshStamped>());
     CV_Assert(mesh);
     update(*mesh);
   }
 
   void update(const MeshStamped &mesh) {
-    boost::unique_lock< boost::shared_mutex > write_lock(mutex_);
+    boost::unique_lock<boost::shared_mutex> write_lock(mutex_);
 
     frame_id_ = mesh.header.frame_id;
 
@@ -46,7 +46,7 @@ public:
   }
 
   virtual std::string getFrameId() const {
-    boost::shared_lock< boost::shared_mutex > read_lock(mutex_);
+    boost::shared_lock<boost::shared_mutex> read_lock(mutex_);
     return frame_id_;
   }
 
@@ -55,7 +55,7 @@ private:
 
   virtual void onIntersection(const cv::Vec3f &src_origin, const cv::Mat &src_direction,
                               cv::Mat &dst, cv::Mat &mask) const {
-    boost::shared_lock< boost::shared_mutex > read_lock(mutex_);
+    boost::shared_lock<boost::shared_mutex> read_lock(mutex_);
     multirayMeshIntersection(src_origin, src_direction, dst, mask);
   }
 
@@ -64,9 +64,9 @@ private:
     dst.create(src_direction.size(), CV_32FC3);
     for (int x = 0; x < src_direction.size().width; ++x) {
       for (int y = 0; y < src_direction.size().height; ++y) {
-        unsigned char &m(mask.at< unsigned char >(y, x));
-        const cv::Vec3f &sd(src_direction.at< cv::Vec3f >(y, x));
-        cv::Vec3f &d(dst.at< cv::Vec3f >(y, x));
+        unsigned char &m(mask.at<unsigned char>(y, x));
+        const cv::Vec3f &sd(src_direction.at<cv::Vec3f>(y, x));
+        cv::Vec3f &d(dst.at<cv::Vec3f>(y, x));
         m = (m != 0 && rayMeshIntersection(src_origin, sd, d)) ? 1 : 0;
       }
     }
@@ -142,8 +142,8 @@ private:
 private:
   mutable boost::shared_mutex mutex_;
   std::string frame_id_;
-  std::vector< cv::Vec3f > vertices_;
-  std::vector< cv::Vec3i > triangles_;
+  std::vector<cv::Vec3f> vertices_;
+  std::vector<cv::Vec3i> triangles_;
 };
 
 } // namespace image_reprojection_plugins

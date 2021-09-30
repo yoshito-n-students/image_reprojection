@@ -35,18 +35,18 @@ TEST(PlaneSurfaceModel, randomIntersection) {
   // check intersections
   for (int x = 0; x < size.width; ++x) {
     for (int y = 0; y < size.height; ++y) {
-      if (mask.at< unsigned char >(y, x) != 0) {
+      if (mask.at<unsigned char>(y, x) != 0) {
         // intersection point is on the plane
-        const cv::Vec3f i(intersection.at< cv::Vec3f >(y, x));
+        const cv::Vec3f i(intersection.at<cv::Vec3f>(y, x));
         EXPECT_NEAR(normal.dot(i - point), 0., 0.001 * cv::norm(normal) * cv::norm(i - point));
 
         // ray direction vector points intersection point
-        const cv::Vec3f d(ray_direction.at< cv::Vec3f >(y, x));
+        const cv::Vec3f d(ray_direction.at<cv::Vec3f>(y, x));
         const double t((i - ray_origin).dot(d) / d.dot(d));
         EXPECT_TRUE(t >= 0.);
         EXPECT_NEAR(cv::norm(i, ray_origin + t * d), 0., 0.001 * cv::norm(t * d));
       } else {
-        const cv::Vec3f d(ray_direction.at< cv::Vec3f >(y, x));
+        const cv::Vec3f d(ray_direction.at<cv::Vec3f>(y, x));
         if (normal.dot(ray_origin - point) >= 0. /* if ray origin is above plane */) {
           // ray direction should point upward
           EXPECT_GE(normal.dot(d), 0.);
