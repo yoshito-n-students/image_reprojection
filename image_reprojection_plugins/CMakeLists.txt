@@ -160,19 +160,15 @@ include_directories(
 ## Declare a C++ library
 add_library(
   image_reprojection_camera_model_plugins
-  src/fisheye_camera_model_plugin.cpp
-  src/pinhole_camera_model_plugin.cpp
+  src/camera_model_plugins.cpp
 )
 add_library(
   image_reprojection_surface_model_plugins
-  src/dem_surface_model_plugin.cpp
-  src/mesh_surface_model_plugin.cpp
-  src/plane_surface_model_plugin.cpp
-  src/sphere_surface_model_plugin.cpp
+  src/surface_model_plugins.cpp
 )
 add_library(
   image_reprojection_nodelet_plugins
-  src/dual_fisheye_splitter.cpp
+  src/nodelet_plugins.cpp
 )
 
 ## Add cmake target dependencies of the library
