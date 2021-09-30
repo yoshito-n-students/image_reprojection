@@ -1,4 +1,4 @@
-name: build
+name: build-and-test
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
       - devel
 
 jobs:
-  build:
+  build-and-test:
     runs-on: ubuntu-latest
 
     strategy:
@@ -51,3 +51,10 @@ jobs:
         run: |
           source /opt/ros/${{ matrix.rosdistro }}/setup.bash
           catkin_make
+
+      # Tests
+      - name: Run tests
+        run: |
+          source /opt/ros/${{ matrix.rosdistro }}/setup.bash
+          roscore &
+          catkin_make run_tests
