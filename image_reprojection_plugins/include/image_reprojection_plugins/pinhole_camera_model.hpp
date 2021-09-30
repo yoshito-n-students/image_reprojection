@@ -24,7 +24,7 @@ public:
 
   virtual ~PinholeCameraModel() {}
 
-  virtual void fromCameraInfo(const sensor_msgs::CameraInfo &camera_info) {
+  virtual void fromCameraInfo(const sensor_msgs::CameraInfo &camera_info) override {
     // assert distortion type and number of distortion parameters
     CV_Assert(camera_info.distortion_model == sensor_msgs::distortion_models::PLUMB_BOB ||
               camera_info.distortion_model == sensor_msgs::distortion_models::RATIONAL_POLYNOMIAL);
@@ -76,15 +76,15 @@ public:
     dist_coeffs_ = camera_info.D;
   }
 
-  virtual sensor_msgs::CameraInfoPtr toCameraInfo() const {
+  virtual sensor_msgs::CameraInfoPtr toCameraInfo() const override {
     boost::shared_lock<boost::shared_mutex> read_lock(mutex_);
     return boost::make_shared<sensor_msgs::CameraInfo>(camera_info_);
   }
 
 private:
-  virtual void onInit() {}
+  virtual void onInit() override {}
 
-  virtual void onProject3dToPixel(const cv::Mat &src, cv::Mat &dst, cv::Mat &mask) const {
+  virtual void onProject3dToPixel(const cv::Mat &src, cv::Mat &dst, cv::Mat &mask) const override {
     boost::shared_lock<boost::shared_mutex> read_lock(mutex_);
 
     // project 3D points in the camera coordinate into the 2D image coordinate
@@ -99,15 +99,16 @@ private:
     //   - output pixel is in the image frame
     for (int x = 0; x < mask.size().width; ++x) {
       for (int y = 0; y < mask.size().height; ++y) {
-        unsigned char &m(mask.at<unsigned char>(y, x));
-        const cv::Point3f &s(src.at<cv::Point3f>(y, x));
-        const cv::Point2f &d(dst.at<cv::Point2f>(y, x));
+        unsigned char &m = mask.at<unsigned char>(y, x);
+        const cv::Point3f &s = src.at<cv::Point3f>(y, x);
+        const cv::Point2f &d = dst.at<cv::Point2f>(y, x);
         m = (m != 0 && s.z >= 0 && frame_.contains(d)) ? 1 : 0;
       }
     }
   }
 
-  virtual void onProjectPixelTo3dRay(const cv::Mat &src, cv::Mat &dst, cv::Mat &mask) const {
+  virtual void onProjectPixelTo3dRay(const cv::Mat &src, cv::Mat &dst,
+                                     cv::Mat &mask) const override {
     boost::shared_lock<boost::shared_mutex> read_lock(mutex_);
 
     // reproject 2D points in the image coordinate to the camera coordinate
@@ -128,8 +129,8 @@ private:
     //   - corresponding input pixel is in the image frame
     for (int x = 0; x < mask.size().width; ++x) {
       for (int y = 0; y < mask.size().height; ++y) {
-        unsigned char &m(mask.at<unsigned char>(y, x));
-        const cv::Point2f &s(src.at<cv::Point2f>(y, x));
+        unsigned char &m = mask.at<unsigned char>(y, x);
+        const cv::Point2f &s = src.at<cv::Point2f>(y, x);
         m = (m != 0 && frame_.contains(s)) ? 1 : 0;
       }
     }

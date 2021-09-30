@@ -21,8 +21,8 @@ public:
 
   virtual ~SphereSurfaceModel() {}
 
-  virtual void update(const topic_tools::ShapeShifter &surface) {
-    const SphereStampedConstPtr sphere(surface.instantiate<SphereStamped>());
+  virtual void update(const topic_tools::ShapeShifter &surface) override {
+    const SphereStampedConstPtr sphere = surface.instantiate<SphereStamped>();
     CV_Assert(sphere);
     update(*sphere);
   }
@@ -37,16 +37,16 @@ public:
     radius_ = sphere.radius;
   }
 
-  virtual std::string getFrameId() const {
+  virtual std::string getFrameId() const override {
     boost::shared_lock<boost::shared_mutex> read_lock(mutex_);
     return frame_id_;
   }
 
 private:
-  virtual void onInit() {}
+  virtual void onInit() override {}
 
   virtual void onIntersection(const cv::Vec3f &src_origin, const cv::Mat &src_direction,
-                              cv::Mat &dst, cv::Mat &mask) const {
+                              cv::Mat &dst, cv::Mat &mask) const override {
     boost::shared_lock<boost::shared_mutex> read_lock(mutex_);
     multiraySphereIntersection(src_origin, src_direction, dst, mask);
   }
@@ -56,9 +56,9 @@ private:
     dst.create(src_direction.size(), CV_32FC3);
     for (int x = 0; x < src_direction.size().width; ++x) {
       for (int y = 0; y < src_direction.size().height; ++y) {
-        unsigned char &m(mask.at<unsigned char>(y, x));
-        const cv::Vec3f &sd(src_direction.at<cv::Vec3f>(y, x));
-        cv::Vec3f &d(dst.at<cv::Vec3f>(y, x));
+        unsigned char &m = mask.at<unsigned char>(y, x);
+        const cv::Vec3f &sd = src_direction.at<cv::Vec3f>(y, x);
+        cv::Vec3f &d = dst.at<cv::Vec3f>(y, x);
         m = (m != 0 && raySphereIntersection(src_origin, sd, d)) ? 1 : 0;
       }
     }
@@ -73,20 +73,20 @@ private:
     //   |d|^2 * t^2 + 2 * dot(d, p - c) * t + |p - c|^2 - r^2 = 0
 
     // position of ray origin with respect to center of sphere
-    const cv::Vec3f o(src_origin - center_);
+    const cv::Vec3f o = src_origin - center_;
 
     // coefficients
-    const double a(src_direction.dot(src_direction));
-    const double b(src_direction.dot(o));
-    const double c(o.dot(o) - radius_ * radius_);
-    const double D(b * b - a * c); // discriminant
+    const double a = src_direction.dot(src_direction);
+    const double b = src_direction.dot(o);
+    const double c = o.dot(o) - radius_ * radius_;
+    const double D = b * b - a * c; // discriminant
     if (/* no intersection */ D < 0.) {
       return false;
     }
 
     // intersection point
-    const double sD(std::sqrt(D));
-    const double t0((-b + sD) / a), t1((-b - sD) / a);
+    const double sD = std::sqrt(D);
+    const double t0 = (-b + sD) / a, t1 = (-b - sD) / a;
     if (t0 >= 0. && t1 >= 0.) {
       dst = src_origin + std::min(t0, t1) * src_direction;
       return true;

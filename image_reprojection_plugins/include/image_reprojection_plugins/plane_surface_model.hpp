@@ -20,8 +20,8 @@ public:
 
   virtual ~PlaneSurfaceModel() {}
 
-  virtual void update(const topic_tools::ShapeShifter &surface) {
-    const PlaneStampedConstPtr plane(surface.instantiate<PlaneStamped>());
+  virtual void update(const topic_tools::ShapeShifter &surface) override {
+    const PlaneStampedConstPtr plane = surface.instantiate<PlaneStamped>();
     CV_Assert(plane);
     update(*plane);
   }
@@ -42,10 +42,10 @@ public:
   }
 
 private:
-  virtual void onInit() {}
+  virtual void onInit() override {}
 
   virtual void onIntersection(const cv::Vec3f &src_origin, const cv::Mat &src_direction,
-                              cv::Mat &dst, cv::Mat &mask) const {
+                              cv::Mat &dst, cv::Mat &mask) const override {
     boost::shared_lock<boost::shared_mutex> read_lock(mutex_);
     multirayPlaneIntersection(src_origin, src_direction, dst, mask);
   }
@@ -55,9 +55,9 @@ private:
     dst.create(src_direction.size(), CV_32FC3);
     for (int x = 0; x < src_direction.size().width; ++x) {
       for (int y = 0; y < src_direction.size().height; ++y) {
-        unsigned char &m(mask.at<unsigned char>(y, x));
-        const cv::Vec3f &sd(src_direction.at<cv::Vec3f>(y, x));
-        cv::Vec3f &d(dst.at<cv::Vec3f>(y, x));
+        unsigned char &m = mask.at<unsigned char>(y, x);
+        const cv::Vec3f &sd = src_direction.at<cv::Vec3f>(y, x);
+        cv::Vec3f &d = dst.at<cv::Vec3f>(y, x);
         m = (m != 0 && rayPlaneIntersection(src_origin, sd, d)) ? 1 : 0;
       }
     }
@@ -66,7 +66,7 @@ private:
   bool rayPlaneIntersection(const cv::Vec3f &src_origin, const cv::Vec3f &src_direction,
                             cv::Vec3f &dst) const {
     // position of ray origin with respect to principle point of plane
-    const cv::Vec3f r(src_origin - point_);
+    const cv::Vec3f r = src_origin - point_;
 
     // intersection point (p) can be described as
     //    p = r + t * d
@@ -74,15 +74,15 @@ private:
     // where d is ray direction
 
     // calculate dot(d, n) for convenience
-    const double ddn(src_direction.dot(normal_));
+    const double ddn = src_direction.dot(normal_);
     if (ddn == 0.) { // means ray and plane are parallel
       return false;
     }
-    const double ddn_sign(ddn > 0. ? 1. : -1.);
-    const double ddn_norm(ddn > 0. ? ddn : -ddn);
+    const double ddn_sign = ddn > 0. ? 1. : -1.;
+    const double ddn_norm = ddn > 0. ? ddn : -ddn;
 
     // t = -dot(r, n) / dot(d, n)
-    const double srdn(ddn_sign * r.dot(normal_));
+    const double srdn = ddn_sign * r.dot(normal_);
     if (srdn > 0.) { // means t < 0
       return false;
     }

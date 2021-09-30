@@ -24,7 +24,7 @@ public:
 
   virtual ~FisheyeCameraModel() {}
 
-  virtual void fromCameraInfo(const sensor_msgs::CameraInfo &camera_info) {
+  virtual void fromCameraInfo(const sensor_msgs::CameraInfo &camera_info) override {
     // assert distortion type and number of distortion parameters
     CV_Assert(camera_info.distortion_model == "fisheye");
     CV_Assert(camera_info.D.empty() || camera_info.D.size() == 4);
@@ -83,15 +83,15 @@ public:
   }
 
 private:
-  virtual void onInit() {
+  virtual void onInit() override {
     boost::unique_lock<boost::shared_mutex> write_lock(mutex_);
 
-    ros::NodeHandle &pnh(getPrivateNodeHandle());
+    ros::NodeHandle &pnh = getPrivateNodeHandle();
     fov_ = pnh.param("fov", M_PI);
     skew_ = pnh.param("skew", 0.);
   }
 
-  virtual void onProject3dToPixel(const cv::Mat &src, cv::Mat &dst, cv::Mat &mask) const {
+  virtual void onProject3dToPixel(const cv::Mat &src, cv::Mat &dst, cv::Mat &mask) const override {
     boost::shared_lock<boost::shared_mutex> read_lock(mutex_);
 
     // allocate dst pixels
@@ -103,8 +103,8 @@ private:
     for (int x = 0; x < mask.size().width; ++x) {
       for (int y = 0; y < mask.size().height; ++y) {
         unsigned char &m(mask.at<unsigned char>(y, x));
-        const cv::Point3f &s(src.at<cv::Point3f>(y, x));
-        cv::Point2f &d(dst.at<cv::Point2f>(y, x));
+        const cv::Point3f &s = src.at<cv::Point3f>(y, x);
+        cv::Point2f &d = dst.at<cv::Point2f>(y, x);
         m = (m != 0 && project3dPointToPixel(s, d)) ? 1 : 0;
       }
     }
@@ -112,7 +112,7 @@ private:
 
   bool project3dPointToPixel(const cv::Point3f &src, cv::Point2f &dst) const {
     // angle between source point and z-axis
-    const double theta(std::acos(src.z / cv::norm(src)));
+    const double theta = std::acos(src.z / cv::norm(src));
 
     // check source point is in field of view
     if (theta > fov_ / 2.) {
@@ -122,8 +122,8 @@ private:
     // distance between distorted point and z-axis
     double theta_d;
     {
-      const double theta2(theta * theta), theta4(theta2 * theta2), theta6(theta4 * theta2),
-          theta8(theta6 * theta2);
+      const double theta2 = theta * theta, theta4 = theta2 * theta2, theta6 = theta4 * theta2,
+                   theta8 = theta6 * theta2;
       theta_d = theta * (1. + dist_coeffs_[0] * theta2 + dist_coeffs_[1] * theta4 +
                          dist_coeffs_[2] * theta6 + dist_coeffs_[3] * theta8);
     }
@@ -131,7 +131,7 @@ private:
     // distort point
     cv::Point2d distorted;
     {
-      const double scale_d(theta_d / cv::sqrt(src.x * src.x + src.y * src.y));
+      const double scale_d = theta_d / cv::sqrt(src.x * src.x + src.y * src.y);
       distorted.x = scale_d * src.x;
       distorted.y = scale_d * src.y;
       // distorted.z = 1.;
@@ -149,7 +149,8 @@ private:
     return true;
   }
 
-  virtual void onProjectPixelTo3dRay(const cv::Mat &src, cv::Mat &dst, cv::Mat &mask) const {
+  virtual void onProjectPixelTo3dRay(const cv::Mat &src, cv::Mat &dst,
+                                     cv::Mat &mask) const override {
     boost::shared_lock<boost::shared_mutex> read_lock(mutex_);
 
     // allocate dst points
@@ -160,9 +161,9 @@ private:
     // if update of dst point succeeded, set corresponding mask to 1, otherwise 0
     for (int x = 0; x < src.size().width; ++x) {
       for (int y = 0; y < src.size().height; ++y) {
-        unsigned char &m(mask.at<unsigned char>(y, x));
-        const cv::Point2f &s(src.at<cv::Point2f>(y, x));
-        cv::Point3f &d(dst.at<cv::Point3f>(y, x));
+        unsigned char &m = mask.at<unsigned char>(y, x);
+        const cv::Point2f &s = src.at<cv::Point2f>(y, x);
+        cv::Point3f &d = dst.at<cv::Point3f>(y, x);
         m = (m != 0 && projectPixelPointTo3dRay(s, d)) ? 1 : 0;
       }
     }
@@ -178,10 +179,10 @@ private:
     const cv::Point3d distorted((src.x - camera_matrix_(0, 2)) / camera_matrix_(0, 0) -
                                     skew_ * (src.y - camera_matrix_(1, 2)) / camera_matrix_(1, 1),
                                 (src.y - camera_matrix_(1, 2)) / camera_matrix_(1, 1), 1.);
-    const double theta_d(cv::sqrt(distorted.x * distorted.x + distorted.y * distorted.y));
+    const double theta_d = cv::sqrt(distorted.x * distorted.x + distorted.y * distorted.y);
 
     // angle of undistorted point from z-axis
-    double theta(theta_d);
+    double theta = theta_d;
     if (theta_d > 1e-8) {
       // newton's method:
       // to find theta giving f(theta) = 0, where
@@ -190,15 +191,15 @@ private:
       //   theta <- theta - theta_fix
       //   theta_fix = f(theta) / f'(theta)
       for (int i = 0; i < 10; ++i) {
-        const double theta2(theta * theta), theta4(theta2 * theta2), theta6(theta4 * theta2),
-            theta8(theta6 * theta2);
-        const double k0_theta2(dist_coeffs_[0] * theta2), k1_theta4(dist_coeffs_[1] * theta4),
-            k2_theta6(dist_coeffs_[2] * theta6), k3_theta8(dist_coeffs_[3] * theta8);
-        const double theta_fix(
+        const double theta2 = theta * theta, theta4 = theta2 * theta2, theta6 = theta4 * theta2,
+                     theta8 = theta6 * theta2;
+        const double k0_theta2 = dist_coeffs_[0] * theta2, k1_theta4 = dist_coeffs_[1] * theta4,
+                     k2_theta6 = dist_coeffs_[2] * theta6, k3_theta8 = dist_coeffs_[3] * theta8;
+        const double theta_fix =
             (theta * (1 + k0_theta2 + k1_theta4 + k2_theta6 + k3_theta8) - theta_d) /
-            (1 + 3 * k0_theta2 + 5 * k1_theta4 + 7 * k2_theta6 + 9 * k3_theta8));
+            (1 + 3 * k0_theta2 + 5 * k1_theta4 + 7 * k2_theta6 + 9 * k3_theta8);
         theta -= theta_fix;
-        if (std::fabs(theta_fix) < std::numeric_limits<double>::epsilon()) {
+        if (std::abs(theta_fix) < std::numeric_limits<double>::epsilon()) {
           break;
         }
       }
