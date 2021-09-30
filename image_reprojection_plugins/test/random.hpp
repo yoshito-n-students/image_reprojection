@@ -78,7 +78,7 @@ static inline cv::Mat randomNonZeroPoints(const cv::Size &size, const double a, 
 }
 
 // cv::Vec3f to geometry_msgs::Point
-geometry_msgs::Point toPointMsg(const cv::Vec3f &point) {
+static inline geometry_msgs::Point toPointMsg(const cv::Vec3f &point) {
   geometry_msgs::Point msg;
   msg.x = point[0];
   msg.y = point[1];

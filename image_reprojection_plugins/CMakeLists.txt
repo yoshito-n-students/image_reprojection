@@ -287,60 +287,17 @@ target_link_libraries(
 
 ## Add gtest based cpp test target and link libraries
 catkin_add_gtest(
-  test_camera_models 
-  test/test_camera_models.cpp
+  image_reprojection_plugins_unit_tests
+  test/unit_tests_camera_models.cpp
+  test/unit_tests_dem_surface_model.cpp
+  test/unit_tests_main.cpp
+  test/unit_tests_mesh_surface_model.cpp
+  test/unit_tests_plane_surface_model.cpp
+  test/unit_tests_sphere_surface_model.cpp
 )
-if(TARGET test_camera_models)
+if(TARGET image_reprojection_plugins_unit_tests)
   target_link_libraries(
-    test_camera_models
-    ${catkin_LIBRARIES}
-    ${OpenCV_LIBRARIES}
-  )
-endif()
-
-catkin_add_gtest(
-  test_dem_surface_model 
-  test/test_dem_surface_model.cpp
-)
-if(TARGET test_dem_surface_model)
-  target_link_libraries(
-    test_dem_surface_model
-    ${catkin_LIBRARIES}
-    ${OpenCV_LIBRARIES}
-  )
-endif()
-
-catkin_add_gtest(
-  test_mesh_surface_model 
-  test/test_mesh_surface_model.cpp
-)
-if(TARGET test_mesh_surface_model)
-  target_link_libraries(
-    test_mesh_surface_model
-    ${catkin_LIBRARIES}
-    ${OpenCV_LIBRARIES}
-  )
-endif()
-
-catkin_add_gtest(
-  test_plane_surface_model 
-  test/test_plane_surface_model.cpp
-)
-if(TARGET test_plane_surface_model)
-  target_link_libraries(
-    test_plane_surface_model
-    ${catkin_LIBRARIES}
-    ${OpenCV_LIBRARIES}
-  )
-endif()
-
-catkin_add_gtest(
-  test_sphere_surface_model 
-  test/test_sphere_surface_model.cpp
-)
-if(TARGET test_sphere_surface_model)
-  target_link_libraries(
-    test_sphere_surface_model
+    image_reprojection_plugins_unit_tests
     ${catkin_LIBRARIES}
     ${OpenCV_LIBRARIES}
   )

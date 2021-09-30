@@ -3,8 +3,6 @@
 #include <image_reprojection_plugins/MeshStamped.h>
 #include <image_reprojection_plugins/dem_surface_model.hpp>
 #include <image_reprojection_plugins/mesh_surface_model.hpp>
-#include <ros/init.h>
-#include <ros/node_handle.h>
 #include <tf/transform_datatypes.h>
 
 #include <opencv2/core/core.hpp>
@@ -15,12 +13,12 @@ namespace irp = image_reprojection_plugins;
 
 geometry_msgs::Quaternion randomOrientationMsg() {
   // random rotaion axis and angle
-  const cv::Vec3d axis(cv::normalize(randomNonZeroPoint(-1., 1.)));
-  const double half_angle(randomValue(-M_PI / 2., M_PI / 2.));
+  const cv::Vec3d axis = cv::normalize(randomNonZeroPoint(-1., 1.));
+  const double half_angle = randomValue(-M_PI / 2., M_PI / 2.);
 
   // quaternion from rotation axis and angle
   geometry_msgs::Quaternion orientation;
-  const double sin(std::sin(half_angle));
+  const double sin = std::sin(half_angle);
   orientation.w = std::cos(half_angle);
   orientation.x = axis[0] * sin;
   orientation.y = axis[1] * sin;
@@ -32,7 +30,7 @@ geometry_msgs::Quaternion randomOrientationMsg() {
 // geometry_msgs::Point from transform matrix and source coordinates
 geometry_msgs::Point transformedPointMsg(const double x, const double y, const double z,
                                          const tf::Transform &transform) {
-  const tf::Vector3 tf_point(transform(tf::Vector3(x, y, z)));
+  const tf::Vector3 tf_point = transform(tf::Vector3(x, y, z));
   geometry_msgs::Point ros_point;
   ros_point.x = tf_point[0];
   ros_point.y = tf_point[1];
@@ -44,9 +42,7 @@ geometry_msgs::Point transformedPointMsg(const double x, const double y, const d
 shape_msgs::MeshTriangle meshTriangleMsg(const unsigned int id0, const unsigned int id1,
                                          const unsigned int id2) {
   shape_msgs::MeshTriangle triangle;
-  triangle.vertex_indices[0] = id0;
-  triangle.vertex_indices[1] = id1;
-  triangle.vertex_indices[2] = id2;
+  triangle.vertex_indices = {id0, id1, id2};
   return triangle;
 }
 
@@ -58,35 +54,19 @@ irp::MeshStamped toMeshMsg(const nav_msgs::OccupancyGrid &grid) {
   tf::Transform dem2tf;
   tf::poseMsgToTF(grid.info.origin, dem2tf);
 
-  const double lxy(grid.info.resolution);
-  const double lz(grid.data[0] / 100.);
-  mesh.mesh.vertices.push_back(transformedPointMsg(0., 0., 0., dem2tf));
-  mesh.mesh.vertices.push_back(transformedPointMsg(lxy, 0., 0., dem2tf));
-  mesh.mesh.vertices.push_back(transformedPointMsg(lxy, lxy, 0., dem2tf));
-  mesh.mesh.vertices.push_back(transformedPointMsg(0., lxy, 0., dem2tf));
-  mesh.mesh.vertices.push_back(transformedPointMsg(0., 0., lz, dem2tf));
-  mesh.mesh.vertices.push_back(transformedPointMsg(lxy, 0., lz, dem2tf));
-  mesh.mesh.vertices.push_back(transformedPointMsg(lxy, lxy, lz, dem2tf));
-  mesh.mesh.vertices.push_back(transformedPointMsg(0., lxy, lz, dem2tf));
-
-  // bottom
-  mesh.mesh.triangles.push_back(meshTriangleMsg(0, 1, 2));
-  mesh.mesh.triangles.push_back(meshTriangleMsg(0, 2, 3));
-  // top
-  mesh.mesh.triangles.push_back(meshTriangleMsg(4, 5, 6));
-  mesh.mesh.triangles.push_back(meshTriangleMsg(4, 6, 7));
-  // front
-  mesh.mesh.triangles.push_back(meshTriangleMsg(0, 3, 7));
-  mesh.mesh.triangles.push_back(meshTriangleMsg(0, 4, 7));
-  // back
-  mesh.mesh.triangles.push_back(meshTriangleMsg(1, 2, 6));
-  mesh.mesh.triangles.push_back(meshTriangleMsg(1, 5, 6));
-  // left
-  mesh.mesh.triangles.push_back(meshTriangleMsg(0, 1, 5));
-  mesh.mesh.triangles.push_back(meshTriangleMsg(0, 4, 5));
-  // right
-  mesh.mesh.triangles.push_back(meshTriangleMsg(2, 3, 7));
-  mesh.mesh.triangles.push_back(meshTriangleMsg(2, 6, 7));
+  const double lxy = grid.info.resolution;
+  const double lz = grid.data[0] / 100.;
+  mesh.mesh.vertices = {
+      transformedPointMsg(0., 0., 0., dem2tf),   transformedPointMsg(lxy, 0., 0., dem2tf),
+      transformedPointMsg(lxy, lxy, 0., dem2tf), transformedPointMsg(0., lxy, 0., dem2tf),
+      transformedPointMsg(0., 0., lz, dem2tf),   transformedPointMsg(lxy, 0., lz, dem2tf),
+      transformedPointMsg(lxy, lxy, lz, dem2tf), transformedPointMsg(0., lxy, lz, dem2tf)};
+  mesh.mesh.triangles = {meshTriangleMsg(0, 1, 2), meshTriangleMsg(0, 2, 3),  // bottom
+                         meshTriangleMsg(4, 5, 6), meshTriangleMsg(4, 6, 7),  // top
+                         meshTriangleMsg(0, 3, 7), meshTriangleMsg(0, 4, 7),  // front
+                         meshTriangleMsg(1, 2, 6), meshTriangleMsg(1, 5, 6),  // back
+                         meshTriangleMsg(0, 1, 5), meshTriangleMsg(0, 4, 5),  // left
+                         meshTriangleMsg(2, 3, 7), meshTriangleMsg(2, 6, 7)}; // right
 
   return mesh;
 }
@@ -94,7 +74,7 @@ irp::MeshStamped toMeshMsg(const nav_msgs::OccupancyGrid &grid) {
 TEST(DEMSurfaceModel, compareMeshIntersection) {
   // 1-box DEM at random pose
   nav_msgs::OccupancyGrid dem;
-  const cv::Vec3f dem_origin(randomPoint(-1., 1.));
+  const cv::Vec3f dem_origin = randomPoint(-1., 1.);
   dem.info.resolution = 0.5;
   dem.info.width = 1;
   dem.info.height = 1;
@@ -114,16 +94,16 @@ TEST(DEMSurfaceModel, compareMeshIntersection) {
 
   // random ray whose source is apart 1.0 from DEM origin and has random direction
   const cv::Size size(100, 100);
-  const cv::Vec3f ray_origin(dem_origin + cv::normalize(randomNonZeroPoint(-1, 1.)));
-  const cv::Mat ray_direction(randomNonZeroPoints(size, -1., 1.));
+  const cv::Vec3f ray_origin = dem_origin + cv::normalize(randomNonZeroPoint(-1, 1.));
+  const cv::Mat ray_direction = randomNonZeroPoints(size, -1., 1.);
 
   // calculate intersection using tested model
-  cv::Mat dem_intersection, dem_mask(cv::Mat::ones(ray_direction.size(), CV_8UC1));
+  cv::Mat dem_intersection, dem_mask = cv::Mat::ones(ray_direction.size(), CV_8UC1);
   dem_model.intersection(ray_origin, ray_direction, dem_intersection, dem_mask);
   EXPECT_GT(cv::countNonZero(dem_mask), 0);
 
   // calculate intersection using comparative model
-  cv::Mat mesh_intersection, mesh_mask(cv::Mat::ones(ray_direction.size(), CV_8UC1));
+  cv::Mat mesh_intersection, mesh_mask = cv::Mat::ones(ray_direction.size(), CV_8UC1);
   mesh_model.intersection(ray_origin, ray_direction, mesh_intersection, mesh_mask);
   EXPECT_GT(cv::countNonZero(mesh_mask), 0);
 
@@ -131,22 +111,15 @@ TEST(DEMSurfaceModel, compareMeshIntersection) {
   for (int x = 0; x < size.width; ++x) {
     for (int y = 0; y < size.height; ++y) {
       // compare mask values
-      const unsigned char dm(dem_mask.at<unsigned char>(y, x));
-      const unsigned char mm(mesh_mask.at<unsigned char>(y, x));
+      const unsigned char dm = dem_mask.at<unsigned char>(y, x);
+      const unsigned char mm = mesh_mask.at<unsigned char>(y, x);
       EXPECT_TRUE((dm != 0 && mm != 0) || (dm == 0 && mm == 0));
       // compare intersection points
       if (dm != 0 && mm != 0) {
-        const cv::Vec3f di(dem_intersection.at<cv::Vec3f>(y, x));
-        const cv::Vec3f mi(mesh_intersection.at<cv::Vec3f>(y, x));
+        const cv::Vec3f &di = dem_intersection.at<cv::Vec3f>(y, x);
+        const cv::Vec3f &mi = mesh_intersection.at<cv::Vec3f>(y, x);
         EXPECT_NEAR(cv::norm(di, mi), 0., 0.001 * cv::norm(mi));
       }
     }
   }
-}
-
-int main(int argc, char *argv[]) {
-  testing::InitGoogleTest(&argc, argv);
-  ros::init(argc, argv, "test_dem_surface_model");
-  ros::NodeHandle nh;
-  return RUN_ALL_TESTS();
 }
