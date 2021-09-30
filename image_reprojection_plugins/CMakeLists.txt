@@ -213,17 +213,29 @@ add_dependencies(
 )
 
 ## Specify libraries to link a library or executable target against
+target_compile_options(
+  image_reprojection_camera_model_plugins
+  PRIVATE -O2
+)
 target_link_libraries(
   image_reprojection_camera_model_plugins
   ${catkin_LIBRARIES}
   ${OpenCV_LIBRARIES}
   ${Boost_LIBRARIES}
 )
+target_compile_options(
+  image_reprojection_surface_model_plugins
+  PRIVATE -O2
+)
 target_link_libraries(
   image_reprojection_surface_model_plugins
   ${catkin_LIBRARIES}
   ${OpenCV_LIBRARIES}
   ${Boost_LIBRARIES}
+)
+target_compile_options(
+  image_reprojection_nodelet_plugins
+  PRIVATE -O2
 )
 target_link_libraries(
   image_reprojection_nodelet_plugins
@@ -296,6 +308,10 @@ catkin_add_gtest(
   test/unit_tests_sphere_surface_model.cpp
 )
 if(TARGET image_reprojection_plugins_unit_tests)
+  target_compile_options(
+    image_reprojection_plugins_unit_tests
+    PRIVATE -O2
+  )
   target_link_libraries(
     image_reprojection_plugins_unit_tests
     ${catkin_LIBRARIES}
