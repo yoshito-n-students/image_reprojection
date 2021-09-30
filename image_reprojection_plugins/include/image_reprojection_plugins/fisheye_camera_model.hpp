@@ -100,14 +100,13 @@ private:
     // update dst points when
     //   - corresponding input point is valid (input mask is valid)
     // if update of dst pixel succeeded, set corresponding mask to 1, otherwise 0
-    for (int x = 0; x < mask.size().width; ++x) {
-      for (int y = 0; y < mask.size().height; ++y) {
-        unsigned char &m(mask.at<unsigned char>(y, x));
-        const cv::Point3f &s = src.at<cv::Point3f>(y, x);
-        cv::Point2f &d = dst.at<cv::Point2f>(y, x);
-        m = (m != 0 && project3dPointToPixel(s, d)) ? 1 : 0;
+    mask.forEach<uchar>([this, &src, &dst](uchar &m, const int *const pos) {
+      if (m != 0) {
+        const cv::Point3f &s = *src.ptr<cv::Point3f>(pos[0], pos[1]);
+        cv::Point2f &d = *dst.ptr<cv::Point2f>(pos[0], pos[1]);
+        m = project3dPointToPixel(s, d) ? 1 : 0;
       }
-    }
+    });
   }
 
   bool project3dPointToPixel(const cv::Point3f &src, cv::Point2f &dst) const {
@@ -159,14 +158,13 @@ private:
     // update dst points when
     //   - corresponding input pixel is valid (input mask is valid)
     // if update of dst point succeeded, set corresponding mask to 1, otherwise 0
-    for (int x = 0; x < src.size().width; ++x) {
-      for (int y = 0; y < src.size().height; ++y) {
-        unsigned char &m = mask.at<unsigned char>(y, x);
-        const cv::Point2f &s = src.at<cv::Point2f>(y, x);
-        cv::Point3f &d = dst.at<cv::Point3f>(y, x);
-        m = (m != 0 && projectPixelPointTo3dRay(s, d)) ? 1 : 0;
+    mask.forEach<uchar>([this, &src, &dst](uchar &m, const int *const pos) {
+      if (m != 0) {
+        const cv::Point2f &s = *src.ptr<cv::Point2f>(pos[0], pos[1]);
+        cv::Point3f &d = *dst.ptr<cv::Point3f>(pos[0], pos[1]);
+        m = projectPixelPointTo3dRay(s, d) ? 1 : 0;
       }
-    }
+    });
   }
 
   bool projectPixelPointTo3dRay(const cv::Point2f &src, cv::Point3f &dst) const {

@@ -97,14 +97,13 @@ private:
     //   - corresponding input point is valid (input mask is valid)
     //   - corresponding input point is in front of the camera
     //   - output pixel is in the image frame
-    for (int x = 0; x < mask.size().width; ++x) {
-      for (int y = 0; y < mask.size().height; ++y) {
-        unsigned char &m = mask.at<unsigned char>(y, x);
-        const cv::Point3f &s = src.at<cv::Point3f>(y, x);
-        const cv::Point2f &d = dst.at<cv::Point2f>(y, x);
-        m = (m != 0 && s.z >= 0 && frame_.contains(d)) ? 1 : 0;
+    mask.forEach<uchar>([this, &src, &dst](uchar &m, const int *const pos) {
+      if (m != 0) {
+        const cv::Point3f &s = *src.ptr<cv::Point3f>(pos[0], pos[1]);
+        cv::Point2f &d = *dst.ptr<cv::Point2f>(pos[0], pos[1]);
+        m = (s.z >= 0 && frame_.contains(d)) ? 1 : 0;
       }
-    }
+    });
   }
 
   virtual void onProjectPixelTo3dRay(const cv::Mat &src, cv::Mat &dst,
@@ -127,13 +126,12 @@ private:
     // an output point is valid when
     //   - corresponding input pixel is valid (input mask is valid)
     //   - corresponding input pixel is in the image frame
-    for (int x = 0; x < mask.size().width; ++x) {
-      for (int y = 0; y < mask.size().height; ++y) {
-        unsigned char &m = mask.at<unsigned char>(y, x);
-        const cv::Point2f &s = src.at<cv::Point2f>(y, x);
-        m = (m != 0 && frame_.contains(s)) ? 1 : 0;
+    mask.forEach<uchar>([this, &src](uchar &m, const int *const pos) {
+      if (m != 0) {
+        const cv::Point2f &s = *src.ptr<cv::Point2f>(pos[0], pos[1]);
+        m = frame_.contains(s) ? 1 : 0;
       }
-    }
+    });
   }
 
 private:
