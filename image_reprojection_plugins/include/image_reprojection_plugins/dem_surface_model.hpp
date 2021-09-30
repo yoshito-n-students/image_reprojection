@@ -50,7 +50,6 @@ public:
     // elevation data (z)
     data_.create(dem.info.width, dem.info.height, CV_64FC1);
     const double data_scale((max_data_ - min_data_) / 100.);
-    // TODO: use cv::Mat::forEach() for faster iteration?
     for (int xid = 0; xid < dem.info.width; ++xid) {
       for (int yid = 0; yid < dem.info.height; ++yid) {
         const int did = xid + yid * dem.info.width;
