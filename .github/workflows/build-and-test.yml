@@ -29,8 +29,8 @@ jobs:
       # System update
       - name: Run apt-upgrade
         run: |
-          sudo apt update
-          sudo apt --yes upgrade
+          apt update
+          apt --yes upgrade
 
       # Checkout
       - name: Checkout image_reprojection
@@ -42,9 +42,9 @@ jobs:
       - name: Install dependencies
         run: |
           source /opt/ros/${{ matrix.rosdistro }}/setup.bash
-          sudo apt update
+          apt update
           rosdep update --rosdistro ${{ matrix.rosdistro }}
-          sudo rosdep install --default-yes -r --ignore-src --from-paths src --rosdistro ${{ matrix.rosdistro }}
+          rosdep install --default-yes -r --ignore-src --from-paths src --rosdistro ${{ matrix.rosdistro }}
 
       # Build
       - name: Build
