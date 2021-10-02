@@ -34,7 +34,7 @@ A ROS nodelet to reproject image as if viewing from different viewpoint or with 
 * name or type of the source camera model plugin whose base type is image_reprojection::CameraModel
 * other parameters for the source camera model can be defined in the same namespace
 
-**~src_cameraN/image_transport** (string, default: "raw")
+**~src_cameraN/image_transport** <N = 1, 2, ..> (string, default: "raw")
 * transport type for images of the Nth source camera
 
 **~surface/model** (string, required)
@@ -47,6 +47,10 @@ A ROS nodelet to reproject image as if viewing from different viewpoint or with 
 
 **~dst_camera/info_file** (string, required)
 * initial camera info of the destination camera will be loaded from this file by using camera_calibration_parsers::readCalibration()
+
+**~dst_camera/frame_id** (string, default: camera name in the info file)
+* frame id of the destination camera
+* the camera name in the info file will be used as the default
 
 **~dst_camera/encoding** (string, default: "bgr8")
 * desired encoding of destination camera images

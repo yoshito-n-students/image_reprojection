@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(image_reprojection_plugins)
 
+## Compile as C++11, supported in ROS Kinetic and newer
+add_compile_options(-std=c++11)
+
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
@@ -157,19 +160,15 @@ include_directories(
 ## Declare a C++ library
 add_library(
   image_reprojection_camera_model_plugins
-  src/fisheye_camera_model_plugin.cpp
-  src/pinhole_camera_model_plugin.cpp
+  src/camera_model_plugins.cpp
 )
 add_library(
   image_reprojection_surface_model_plugins
-  src/dem_surface_model_plugin.cpp
-  src/mesh_surface_model_plugin.cpp
-  src/plane_surface_model_plugin.cpp
-  src/sphere_surface_model_plugin.cpp
+  src/surface_model_plugins.cpp
 )
 add_library(
   image_reprojection_nodelet_plugins
-  src/dual_fisheye_splitter.cpp
+  src/nodelet_plugins.cpp
 )
 
 ## Add cmake target dependencies of the library
@@ -193,6 +192,10 @@ add_executable(
   static_sphere_publisher 
   src/static_sphere_publisher.cpp
 )
+add_executable(
+  tf_tracking_gimbal
+  src/tf_tracking_gimbal.cpp
+)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
@@ -210,17 +213,29 @@ add_dependencies(
 )
 
 ## Specify libraries to link a library or executable target against
+target_compile_options(
+  image_reprojection_camera_model_plugins
+  PRIVATE -O2
+)
 target_link_libraries(
   image_reprojection_camera_model_plugins
   ${catkin_LIBRARIES}
   ${OpenCV_LIBRARIES}
   ${Boost_LIBRARIES}
 )
+target_compile_options(
+  image_reprojection_surface_model_plugins
+  PRIVATE -O2
+)
 target_link_libraries(
   image_reprojection_surface_model_plugins
   ${catkin_LIBRARIES}
   ${OpenCV_LIBRARIES}
   ${Boost_LIBRARIES}
+)
+target_compile_options(
+  image_reprojection_nodelet_plugins
+  PRIVATE -O2
 )
 target_link_libraries(
   image_reprojection_nodelet_plugins
@@ -236,6 +251,10 @@ target_link_libraries(
 )
 target_link_libraries(
   static_sphere_publisher
+  ${catkin_LIBRARIES}
+)
+target_link_libraries(
+  tf_tracking_gimbal
   ${catkin_LIBRARIES}
 )
 
@@ -280,60 +299,21 @@ target_link_libraries(
 
 ## Add gtest based cpp test target and link libraries
 catkin_add_gtest(
-  test_camera_models 
-  test/test_camera_models.cpp
+  image_reprojection_plugins_unit_tests
+  test/unit_tests_camera_models.cpp
+  test/unit_tests_dem_surface_model.cpp
+  test/unit_tests_main.cpp
+  test/unit_tests_mesh_surface_model.cpp
+  test/unit_tests_plane_surface_model.cpp
+  test/unit_tests_sphere_surface_model.cpp
 )
-if(TARGET test_camera_models)
-  target_link_libraries(
-    test_camera_models
-    ${catkin_LIBRARIES}
-    ${OpenCV_LIBRARIES}
+if(TARGET image_reprojection_plugins_unit_tests)
+  target_compile_options(
+    image_reprojection_plugins_unit_tests
+    PRIVATE -O2
   )
-endif()
-
-catkin_add_gtest(
-  test_dem_surface_model 
-  test/test_dem_surface_model.cpp
-)
-if(TARGET test_dem_surface_model)
   target_link_libraries(
-    test_dem_surface_model
-    ${catkin_LIBRARIES}
-    ${OpenCV_LIBRARIES}
-  )
-endif()
-
-catkin_add_gtest(
-  test_mesh_surface_model 
-  test/test_mesh_surface_model.cpp
-)
-if(TARGET test_mesh_surface_model)
-  target_link_libraries(
-    test_mesh_surface_model
-    ${catkin_LIBRARIES}
-    ${OpenCV_LIBRARIES}
-  )
-endif()
-
-catkin_add_gtest(
-  test_plane_surface_model 
-  test/test_plane_surface_model.cpp
-)
-if(TARGET test_plane_surface_model)
-  target_link_libraries(
-    test_plane_surface_model
-    ${catkin_LIBRARIES}
-    ${OpenCV_LIBRARIES}
-  )
-endif()
-
-catkin_add_gtest(
-  test_sphere_surface_model 
-  test/test_sphere_surface_model.cpp
-)
-if(TARGET test_sphere_surface_model)
-  target_link_libraries(
-    test_sphere_surface_model
+    image_reprojection_plugins_unit_tests
     ${catkin_LIBRARIES}
     ${OpenCV_LIBRARIES}
   )

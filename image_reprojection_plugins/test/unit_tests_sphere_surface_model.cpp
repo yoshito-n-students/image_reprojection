@@ -2,8 +2,6 @@
 
 #include <image_reprojection_plugins/SphereStamped.h>
 #include <image_reprojection_plugins/sphere_surface_model.hpp>
-#include <ros/init.h>
-#include <ros/node_handle.h>
 
 #include <opencv2/core/core.hpp>
 
@@ -22,28 +20,28 @@ TEST(SphereSurfaceModel, randomIntersection) {
   // initialize tested model with random sphere
   irp::SphereSurfaceModel model;
   model.init("sphere", ros::M_string(), ros::V_string());
-  const cv::Vec3f center(randomPoint(-1., 1.));
-  const double radius(randomNonZeroValue(0., 1.));
+  const cv::Vec3f center = randomPoint(-1., 1.);
+  const double radius = randomNonZeroValue(0., 1.);
   model.update(toSphereMsg(center, radius));
 
   // calculate intersections using tested model
   const cv::Size size(100, 100);
-  const cv::Vec3f ray_origin(randomPoint(-1., 1.));
-  const cv::Mat ray_direction(randomNonZeroPoints(size, -1., 1.));
-  cv::Mat intersection, mask(cv::Mat::ones(size, CV_8UC1));
+  const cv::Vec3f ray_origin = randomPoint(-1., 1.);
+  const cv::Mat ray_direction = randomNonZeroPoints(size, -1., 1.);
+  cv::Mat intersection, mask = cv::Mat::ones(size, CV_8UC1);
   model.intersection(ray_origin, ray_direction, intersection, mask);
 
   // check intersections
   for (int x = 0; x < size.width; ++x) {
     for (int y = 0; y < size.height; ++y) {
-      if (mask.at< unsigned char >(y, x) != 0) {
+      if (mask.at<unsigned char>(y, x) != 0) {
         // intersection point is on the sphere
-        const cv::Vec3f i(intersection.at< cv::Vec3f >(y, x));
+        const cv::Vec3f &i = intersection.at<cv::Vec3f>(y, x);
         EXPECT_NEAR(cv::norm(i, center), radius, 0.001 * radius);
 
         // ray direction vector points intersection point
-        const cv::Vec3f d(ray_direction.at< cv::Vec3f >(y, x));
-        const double t((i - ray_origin).dot(d) / d.dot(d));
+        const cv::Vec3f &d = ray_direction.at<cv::Vec3f>(y, x);
+        const double t = (i - ray_origin).dot(d) / d.dot(d);
         EXPECT_TRUE(t >= 0.);
         EXPECT_NEAR(cv::norm(i, ray_origin + t * d), 0., 0.001 * cv::norm(t * d));
       } else {
@@ -51,17 +49,10 @@ TEST(SphereSurfaceModel, randomIntersection) {
         //   x = o + s * d
         //   dot(d, x - c) = 0
         //   (o: ray origin, d: ray direction, c: sphere center)
-        const cv::Vec3f d(ray_direction.at< cv::Vec3f >(y, x));
-        const double s((center - ray_origin).dot(d) / d.dot(d));
+        const cv::Vec3f &d = ray_direction.at<cv::Vec3f>(y, x);
+        const double s = (center - ray_origin).dot(d) / d.dot(d);
         EXPECT_TRUE(cv::norm(/* x */ ray_origin + s * d, center) > radius || s < 0.);
       }
     }
   }
-}
-
-int main(int argc, char *argv[]) {
-  testing::InitGoogleTest(&argc, argv);
-  ros::init(argc, argv, "test_sphere_surface_model");
-  ros::NodeHandle nh;
-  return RUN_ALL_TESTS();
 }

@@ -1,6 +1,7 @@
 #ifndef IMAGE_REPROJECTION_IMAGE_REPROJECTION_HPP
 #define IMAGE_REPROJECTION_IMAGE_REPROJECTION_HPP
 
+#include <memory>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -31,7 +32,6 @@
 
 #include <boost/bind.hpp>
 #include <boost/lexical_cast.hpp>
-#include <boost/scoped_ptr.hpp>
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -64,10 +64,10 @@ private:
   // initialization
   //
 
-  virtual void onInit() {
+  virtual void onInit() override {
     // get node handles
-    ros::NodeHandle &nh(getNodeHandle());
-    ros::NodeHandle &pnh(getPrivateNodeHandle());
+    ros::NodeHandle &nh = getNodeHandle();
+    ros::NodeHandle &pnh = getPrivateNodeHandle();
     image_transport::ImageTransport it(nh);
 
     //
@@ -75,7 +75,7 @@ private:
     //
 
     for (int i = 0; true; ++i) {
-      const std::string i_str(boost::lexical_cast< std::string >(i));
+      const std::string i_str = boost::lexical_cast<std::string>(i);
       if (!pnh.hasParam("src_camera" + i_str + "/model")) {
         break;
       }
@@ -129,7 +129,7 @@ private:
 
     // load parameters
     dst_image_encoding_ =
-        pnh.param< std::string >("dst_camera/encoding", sensor_msgs::image_encodings::BGR8);
+        pnh.param<std::string>("dst_camera/encoding", sensor_msgs::image_encodings::BGR8);
     map_binning_x_ = pnh.param("map_update/binning_x", 8);
     map_binning_y_ = pnh.param("map_update/binning_y", 8);
 
@@ -149,8 +149,10 @@ private:
     {
       std::string info_file;
       CV_Assert(pnh.getParam("dst_camera/info_file", info_file));
+      std::string name;
       sensor_msgs::CameraInfo info;
-      CV_Assert(camera_calibration_parsers::readCalibration(info_file, info.header.frame_id, info));
+      CV_Assert(camera_calibration_parsers::readCalibration(info_file, name, info));
+      info.header.frame_id = pnh.param<std::string>("dst_camera/frame_id", name);
       dst_camera_model_->fromCameraInfo(info);
     }
 
@@ -223,7 +225,7 @@ private:
       }
 
       // get destination camera info
-      const sensor_msgs::CameraInfoConstPtr dst_camera_info(dst_camera_model_->toCameraInfo());
+      const sensor_msgs::CameraInfoConstPtr dst_camera_info = dst_camera_model_->toCameraInfo();
       CV_Assert(dst_camera_info);
 
       // prepare the destination image
@@ -273,24 +275,22 @@ private:
 
   void updateMap() {
     // get destination camera info
-    const sensor_msgs::CameraInfoConstPtr dst_camera_info(dst_camera_model_->toCameraInfo());
+    const sensor_msgs::CameraInfoConstPtr dst_camera_info = dst_camera_model_->toCameraInfo();
     CV_Assert(dst_camera_info);
 
     // figure out size of destination image and shrinked map
-    const cv::Size dst_image_size(toImageSize(*dst_camera_info));
+    const cv::Size dst_image_size = toImageSize(*dst_camera_info);
     const cv::Size binned_map_size(dst_image_size.width / map_binning_x_,
                                    dst_image_size.height / map_binning_y_);
 
     // create initial map and mask
     cv::Mat binned_map(binned_map_size, CV_32FC2);
-    for (int x = 0; x < binned_map_size.width; ++x) {
-      for (int y = 0; y < binned_map_size.height; ++y) {
-        binned_map.at< cv::Point2f >(y, x) =
-            cv::Point2f((dst_image_size.width - 1.) * x / (binned_map_size.width - 1.),
-                        (dst_image_size.height - 1.) * y / (binned_map_size.height - 1.));
-      }
-    }
-    cv::Mat binned_mask(cv::Mat::ones(binned_map_size, CV_8UC1));
+    binned_map.forEach<cv::Point2f>(
+        [dst_image_size, binned_map_size](cv::Point2f &bm, const int *const pos) {
+          bm.x = (dst_image_size.width - 1.) * pos[1] / (binned_map_size.width - 1.);
+          bm.y = (dst_image_size.height - 1.) * pos[0] / (binned_map_size.height - 1.);
+        });
+    cv::Mat binned_mask = cv::Mat::ones(binned_map_size, CV_8UC1);
 
     // calculate mapping from destination pixels to ray toward surface
     cv::Mat ray_directions;
@@ -315,8 +315,8 @@ private:
       // get transform between src camera and surface
       tf::StampedTransform src_i2surface;
       {
-        const sensor_msgs::CameraInfoConstPtr src_camera_info_i(
-            src_camera_models_[i]->toCameraInfo());
+        const sensor_msgs::CameraInfoConstPtr src_camera_info_i =
+            src_camera_models_[i]->toCameraInfo();
         CV_Assert(src_camera_info_i);
         tf_listener_->lookupTransform(/* to */ surface_model_->getFrameId(),
                                       /* from */ src_camera_info_i->header.frame_id,
@@ -324,24 +324,24 @@ private:
       }
 
       // exclude intersection points not visible from src camera
-      cv::Mat binned_mask_i(binned_mask.clone());
+      cv::Mat binned_mask_i = binned_mask.clone();
       surface_model_->intersectsAt(transform(cv::Vec3f(0., 0., 0.), src_i2surface), intersections,
                                    binned_mask_i, /* allowable error */ 0.001);
 
       // calculate mapping from points on surface to source pixels
-      const cv::Mat intersections_i(
-          transform(intersections, src_i2surface.inverse(), binned_mask_i));
-      cv::Mat binned_map_i(binned_map.clone());
+      const cv::Mat intersections_i =
+          transform(intersections, src_i2surface.inverse(), binned_mask_i);
+      cv::Mat binned_map_i = binned_map.clone();
       src_camera_models_[i]->project3dToPixel(intersections_i, binned_map_i, binned_mask_i);
 
       // inpaint invalid mappings in the shrinked map using valid ones
       // to get better full resolution map by resizing the shrinked map
       {
-        const int n_valid_mappings(cv::countNonZero(binned_mask_i));
+        const int n_valid_mappings = cv::countNonZero(binned_mask_i);
         // if both valid and invalid mappings exist
         if (n_valid_mappings > 0 && n_valid_mappings < binned_map_i.total()) {
           // invert mask to indicate pixels to be inpainted
-          cv::Mat inpaint_mask_i(cv::Mat::ones(binned_map_size, CV_8UC1));
+          cv::Mat inpaint_mask_i = cv::Mat::ones(binned_map_size, CV_8UC1);
           inpaint_mask_i.setTo(0, binned_mask_i);
           // inpaint every channel (cv::inpaint() does not accept 2-channel mat)
           for (int channel = 0; channel < binned_map_i.channels(); ++channel) {
@@ -368,13 +368,13 @@ private:
 
 private:
   // model loaders
-  pluginlib::ClassLoader< CameraModel > camera_model_loader_;
-  pluginlib::ClassLoader< SurfaceModel > surface_model_loader_;
+  pluginlib::ClassLoader<CameraModel> camera_model_loader_;
+  pluginlib::ClassLoader<SurfaceModel> surface_model_loader_;
 
   // src cameras
-  std::vector< image_transport::CameraSubscriber > src_camera_subscribers_;
-  std::vector< CameraModelPtr > src_camera_models_;
-  std::vector< cv_bridge::CvImageConstPtr > src_images_;
+  std::vector<image_transport::CameraSubscriber> src_camera_subscribers_;
+  std::vector<CameraModelPtr> src_camera_models_;
+  std::vector<cv_bridge::CvImageConstPtr> src_images_;
 
   // surface
   ros::Subscriber surface_subscriber_;
@@ -389,10 +389,10 @@ private:
 
   // mapping between src and dst image pixels
   ros::Timer map_timer_;
-  boost::scoped_ptr< tf::TransformListener > tf_listener_;
+  std::unique_ptr<tf::TransformListener> tf_listener_;
   int map_binning_x_, map_binning_y_;
-  std::vector< cv::Mat > maps_;
-  std::vector< cv::Mat > masks_;
+  std::vector<cv::Mat> maps_;
+  std::vector<cv::Mat> masks_;
 };
 
 } // namespace image_reprojection

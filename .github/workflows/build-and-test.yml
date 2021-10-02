@@ -1,0 +1,64 @@
+name: build-and-test
+
+on:
+  push:
+    branches:
+      - master
+      - devel
+      
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        rosdistro: [kinetic, melodic, noetic]
+
+    container:
+      image: ros:${{ matrix.rosdistro }}-ros-base
+
+    defaults:
+      run:
+        shell: bash
+
+    env:
+      GTEST_COLOR: 1
+
+    steps:
+      # System update
+      - name: Run apt-upgrade
+        run: |
+          apt update
+          apt --yes upgrade
+
+      # Checkout
+      - name: Checkout image_reprojection
+        uses: actions/checkout@v2
+        with:
+          path: src/image_reprojection
+
+      # Install dependencies
+      - name: Install dependencies
+        run: |
+          source /opt/ros/${{ matrix.rosdistro }}/setup.bash
+          apt update
+          rosdep update --rosdistro ${{ matrix.rosdistro }}
+          rosdep install --default-yes -r --ignore-src --from-paths src --rosdistro ${{ matrix.rosdistro }}
+
+      # Build
+      - name: Build
+        run: |
+          source /opt/ros/${{ matrix.rosdistro }}/setup.bash
+          catkin_make
+
+      # Tests
+      - name: Run tests
+        run: |
+          source /opt/ros/${{ matrix.rosdistro }}/setup.bash
+          roscore &
+          catkin_make run_tests

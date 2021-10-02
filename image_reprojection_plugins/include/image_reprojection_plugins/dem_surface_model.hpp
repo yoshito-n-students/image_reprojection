@@ -24,8 +24,8 @@ public:
 
   virtual ~DEMSurfaceModel() {}
 
-  virtual void update(const topic_tools::ShapeShifter &surface) {
-    const nav_msgs::OccupancyGridConstPtr dem(surface.instantiate< nav_msgs::OccupancyGrid >());
+  virtual void update(const topic_tools::ShapeShifter &surface) override {
+    const nav_msgs::OccupancyGridConstPtr dem = surface.instantiate<nav_msgs::OccupancyGrid>();
     CV_Assert(dem);
     update(*dem);
   }
@@ -35,7 +35,7 @@ public:
     CV_Assert(dem.info.height > 0);
     CV_Assert(dem.data.size() == dem.info.width * dem.info.height);
 
-    boost::unique_lock< boost::shared_mutex > write_lock(mutex_);
+    boost::unique_lock<boost::shared_mutex> write_lock(mutex_);
 
     // frame id of arguments of intersection()
     tf_frame_id_ = dem.header.frame_id;
@@ -52,31 +52,31 @@ public:
     const double data_scale((max_data_ - min_data_) / 100.);
     for (int xid = 0; xid < dem.info.width; ++xid) {
       for (int yid = 0; yid < dem.info.height; ++yid) {
-        const int did(xid + yid * dem.info.width);
-        data_.at< double >(yid, xid) = min_data_ + data_scale * dem.data[did];
+        const int did = xid + yid * dem.info.width;
+        *data_.ptr<double>(yid, xid) = min_data_ + data_scale * dem.data[did];
       }
     }
   }
 
-  virtual std::string getFrameId() const {
-    boost::shared_lock< boost::shared_mutex > read_lock(mutex_);
+  virtual std::string getFrameId() const override {
+    boost::shared_lock<boost::shared_mutex> read_lock(mutex_);
     return tf_frame_id_;
   }
 
 private:
-  virtual void onInit() {
-    boost::unique_lock< boost::shared_mutex > write_lock(mutex_);
+  virtual void onInit() override {
+    boost::unique_lock<boost::shared_mutex> write_lock(mutex_);
 
-    ros::NodeHandle &pnh(getPrivateNodeHandle());
+    ros::NodeHandle &pnh = getPrivateNodeHandle();
     min_data_ = pnh.param("min_data", 0.);
     max_data_ = pnh.param("max_data", 1.);
   }
 
   virtual void onIntersection(const cv::Vec3f &src_origin, const cv::Mat &src_direction,
-                              cv::Mat &dst, cv::Mat &mask) const {
+                              cv::Mat &dst, cv::Mat &mask) const override {
     namespace ir = image_reprojection;
 
-    boost::shared_lock< boost::shared_mutex > read_lock(mutex_);
+    boost::shared_lock<boost::shared_mutex> read_lock(mutex_);
 
     multirayDEMIntersection(ir::transform(src_origin, tf2dem_),
                             ir::transform(src_direction, tf2dem_.getBasis(), mask), dst, mask);
@@ -86,25 +86,24 @@ private:
   void multirayDEMIntersection(const cv::Vec3f &src_origin, const cv::Mat &src_direction,
                                cv::Mat &dst, cv::Mat &mask) const {
     dst.create(src_direction.size(), CV_32FC3);
-    for (int x = 0; x < src_direction.size().width; ++x) {
-      for (int y = 0; y < src_direction.size().height; ++y) {
-        unsigned char &m(mask.at< unsigned char >(y, x));
-        const cv::Vec3f &sd(src_direction.at< cv::Vec3f >(y, x));
-        cv::Vec3f &d(dst.at< cv::Vec3f >(y, x));
-        m = (m != 0 && rayDEMIntersection(src_origin, sd, d)) ? 1 : 0;
+    mask.forEach<uchar>([this, &src_origin, &src_direction, &dst](uchar &m, const int *const pos) {
+      if (m != 0) {
+        const cv::Vec3f &sd = *src_direction.ptr<cv::Vec3f>(pos[0], pos[1]);
+        cv::Vec3f &d = *dst.ptr<cv::Vec3f>(pos[0], pos[1]);
+        m = rayDEMIntersection(src_origin, sd, d) ? 1 : 0;
       }
-    }
+    });
   }
 
   bool rayDEMIntersection(const cv::Vec3f &src_origin, const cv::Vec3f &src_direction,
                           cv::Vec3f &dst) const {
-    bool intersects(false);
+    bool intersects = false;
     double min_distance;
     for (int xid = 0; xid < data_.size().width; ++xid) {
       for (int yid = 0; yid < data_.size().height; ++yid) {
         cv::Vec3f this_intersection;
         if (rayBoxIntersection(src_origin, src_direction, xid, yid, this_intersection)) {
-          const double this_distance(cv::norm(src_origin, this_intersection));
+          const double this_distance = cv::norm(src_origin, this_intersection);
           if (!intersects || (intersects && this_distance < min_distance)) {
             intersects = true;
             min_distance = this_distance;
@@ -121,7 +120,7 @@ private:
                           const int xid, const int yid, cv::Vec3f &dst) const {
     // box specs
     const cv::Vec3d box_origin(xid * resolution_, yid * resolution_, 0.);
-    const cv::Vec3d box_length(resolution_, resolution_, data_.at< double >(yid, xid));
+    const cv::Vec3d box_length(resolution_, resolution_, data_.at<double>(yid, xid));
 
     // intersection point (p) can bescribed as
     //   p = r + t * d
@@ -163,7 +162,7 @@ private:
       }
       // m --- o --- M
       t_min = 0.;
-      t_max = std::numeric_limits< double >::max();
+      t_max = std::numeric_limits<double>::max();
       return true;
     } else if (src_direction > 0.) {
       // m --- M ---- o->

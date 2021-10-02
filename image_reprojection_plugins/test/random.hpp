@@ -22,7 +22,7 @@ static inline double randomNonZeroValue(const double a, const double b) {
 }
 
 // generate random pixel coordinate in given region
-static inline cv::Vec2f randomPixel(const cv::Rect_< float > &region) {
+static inline cv::Vec2f randomPixel(const cv::Rect_<float> &region) {
   return cv::Vec2f(randomValue(region.x, region.x + region.width),
                    randomValue(region.y, region.y + region.height));
 }
@@ -45,11 +45,11 @@ static inline cv::Vec3f randomNonZeroPoint(const double a, const double b) {
 }
 
 // generate set of pixels by using randomPixel()
-static inline cv::Mat randomPixels(const cv::Size &size, const cv::Rect_< float > &region) {
+static inline cv::Mat randomPixels(const cv::Size &size, const cv::Rect_<float> &region) {
   cv::Mat pixels(size, CV_32FC2);
   for (int x = 0; x < size.width; ++x) {
     for (int y = 0; y < size.height; ++y) {
-      pixels.at< cv::Vec2f >(y, x) = randomPixel(region);
+      pixels.at<cv::Vec2f>(y, x) = randomPixel(region);
     }
   }
   return pixels;
@@ -60,7 +60,7 @@ static inline cv::Mat randomPoints(const cv::Size &size, const double a, const d
   cv::Mat points(size, CV_32FC3);
   for (int x = 0; x < size.width; ++x) {
     for (int y = 0; y < size.height; ++y) {
-      points.at< cv::Vec3f >(y, x) = randomPoint(a, b);
+      points.at<cv::Vec3f>(y, x) = randomPoint(a, b);
     }
   }
   return points;
@@ -71,14 +71,14 @@ static inline cv::Mat randomNonZeroPoints(const cv::Size &size, const double a, 
   cv::Mat points(size, CV_32FC3);
   for (int x = 0; x < size.width; ++x) {
     for (int y = 0; y < size.height; ++y) {
-      points.at< cv::Vec3f >(y, x) = randomNonZeroPoint(a, b);
+      points.at<cv::Vec3f>(y, x) = randomNonZeroPoint(a, b);
     }
   }
   return points;
 }
 
 // cv::Vec3f to geometry_msgs::Point
-geometry_msgs::Point toPointMsg(const cv::Vec3f &point) {
+static inline geometry_msgs::Point toPointMsg(const cv::Vec3f &point) {
   geometry_msgs::Point msg;
   msg.x = point[0];
   msg.y = point[1];

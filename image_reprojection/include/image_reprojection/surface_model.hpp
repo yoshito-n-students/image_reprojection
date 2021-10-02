@@ -88,14 +88,13 @@ public:
       update mask according to error on intersection points
      */
 
-    for (int x = 0; x < mask.size().width; ++x) {
-      for (int y = 0; y < mask.size().height; ++y) {
-        unsigned char &m(mask.at< unsigned char >(y, x));
-        const cv::Vec3f &a(actual.at< cv::Vec3f >(y, x));
-        const cv::Vec3f &e(expected.at< cv::Vec3f >(y, x));
-        m = (m != 0 && cv::norm(a, e) <= abs_error) ? 1 : 0;
+    mask.forEach<uchar>([actual, expected, abs_error](uchar &m, const int *const pos) {
+      if (m != 0) {
+        const cv::Vec3f &a = *actual.ptr<cv::Vec3f>(pos[0], pos[1]);
+        const cv::Vec3f &e = *expected.ptr<cv::Vec3f>(pos[0], pos[1]);
+        m = (cv::norm(a, e) <= abs_error) ? 1 : 0;
       }
-    }
+    });
   }
 
   /*
@@ -118,8 +117,8 @@ private:
                               cv::Mat &dst, cv::Mat &mask) const = 0;
 };
 
-typedef boost::shared_ptr< SurfaceModel > SurfaceModelPtr;
-typedef boost::shared_ptr< const SurfaceModel > SurfaceModelConstPtr;
+typedef boost::shared_ptr<SurfaceModel> SurfaceModelPtr;
+typedef boost::shared_ptr<const SurfaceModel> SurfaceModelConstPtr;
 
 } // namespace image_reprojection
 
